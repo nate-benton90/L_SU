@@ -1,0 +1,1 @@
+sugain pbal=1 < /home/gom/ihnc.2/seismics/data///062717/Z/1/su/gom/1001_43_clean_sort.su | suximage  clip=1 title=suximage perc=100 wbox=200 xbox=800 ybox=1 ybox=300 cmap=rgb0 style=seismic & 

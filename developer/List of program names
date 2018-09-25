@@ -1,0 +1,451 @@
+    GUI Widgets from MAIN ( 16 off)
+    
+    $TkPl_SU->{_add2flow_button_grey}	= $add2flow_button_grey;   	
+	$TkPl_SU->{_check_code_button}  	= $check_code_button;
+	$TkPl_SU->{_delete_from_flow_button}= $delete_from_flow_button;	 
+    $TkPl_SU->{_dnd_token} 				= $dnd_token;
+    $TkPl_SU->{_dropsite_token} 		= $dropsite_token;
+ 	$TkPl_SU->{_file_menubutton} 		= $file_menubutton;
+ 	$TkPl_SU->{_flow_listbox_grey_w} 	= $flow_listbox_grey_w;
+    $TkPl_SU->{_flow_listbox_green_w} 	= $flow_listbox_green_w;
+ 	$TkPl_SU->{_message_w} 				= $message; 
+  	$TkPl_SU->{_mw} 					= $mw;
+  	$TkPl_SU->{_parameter_names_frame}	= $parameter_names_frame;
+  	$TkPl_SU->{_parameter_values_frame}	= $parameter_values_frame; 
+  	$TkPl_SU->{_parameter_values_button_frame} = $parameter_values_button_frame;
+  	$TkPl_SU->{_run_button}				= $run_button;		          					 	
+  	$TkPl_SU->{_save_button}			= $save_button;           		          		
+	$TkPl_SU->{_sunix_listbox}			= $sunix_listbox;  
+	
+	
+
+
+
+Initialialized private hash variables from L_SU
+Many more than the 16 that are imported from the MAIN
+	
+	
+ my $L_SU   = { 		 		
+ 	_add2flow_button_grey			=> '',
+ 	_check_code_button				=> '', 		 		
+ 	_delete_from_flow_button		=> '', 
+ 	_destination_index	 			=> '',
+ 	_dnd_token						=> '', 
+ 	_dropsite_token					=> '', 
+ 	_file_menubutton				=> '', 
+ 	_flow_listbox_grey_w			=> '', 
+  	_flow_listbox_green_w			=> '', 
+  	_message_w						=> '',  
+   	_mw								=> '', 
+ 	_parameter_names_frame  		=> '', 
+ 	_parameter_values_frame 		=> '', 
+ 	_parameter_values_button_frame	=> '', 	
+ 	_run_button						=> '',  	 	
+ 	_save_button					=> '', 
+ 	_sunix_listbox					=> '', 
+	_check_buttons_settings_aref    => '',
+    _current_widget					=> '', 
+	_current_index  				=> '',
+	_current_sunix_selection_index 	=> '',
+	_entry_button_label	  			=> '',	
+	_flow_name_out					=> '',
+	_flow_type						=> $flow_type->{_user_built},
+	_flow_widget_index				=> '',
+	_good_labels_aref2				=> '',
+	_good_values_aref2 				=> '',		
+	_prog_names_aref 				=> '', 
+	_name_aref    					=> '',
+	_names_aref    					=> '',
+	_first_index    				=> '',
+    _index2move	    				=> '',
+    _has_used_check_code_button		=> '',
+    _has_used_saveas_flow_button	=> '',
+  	_items_versions_aref 			=> '',
+  	_items_values_aref2  			=> '',
+  	_items_names_aref2  			=> '',
+  	_items_checkbuttons_aref2 		=> '',
+	_is_add2flow_button	   			=> '',
+	_is_check_code_button          	=> '',
+	_is_delete_from_flow_button	   	=> '',
+	_is_flow_listbox_grey_w			=> '',
+	_is_flow_listbox_green_w		=> '',
+     is_flow_listbox_sw				=> '',
+	_is_flow_listbox_se				=> '',
+    _is_moveNdrop_in_flow			=> '',
+    _is_run_button          		=> '',
+    _is_pre_built_superflow			=> '',
+    _is_save_button          		=> '',
+    _is_saveas_file_button			=> '',
+	_is_sunix_listbox				=> '',
+	_is_superflow_select_button		=> '',
+	_is_superflow 					=> '',
+	_is_sunix_listbox				=> '',
+	_is_pre_built_superflow			=> '', 
+	_is_user_built_flow				=> '',
+	_first    						=> '',
+	_last    						=> '',
+	_last_flow_index_touched	 	=> -1,
+	_last_flow_listbox_touched 		=> '',
+	_last_flow_listbox_touched_w 	=> '',
+	_last_path_touched				=> './',
+	_run_button						=> '',
+    _last_param    					=> '',
+    _first_param    				=> '',
+	_length    						=> '',
+	_name     						=> '',
+	_open							=> '',
+	_path     						=> '',
+	_param_flow_first       		=> 0,
+	_param_flow_length        		=> '',
+	_param_sunix_first_idx      	=> 0,
+	_param_sunix_length       		=> '',
+	_parameter_value_index  		=> -1,
+	_prev_index  					=> '',
+	_prev_prog_name   				=> '',
+	_prev_ref_values_w  			=> '',
+	_ref_labels  					=> '',
+	_ref_labels_w  					=> '',
+	_prog_name     					=> '',
+	_prog_name_sref					=> '',
+	_prev_ref_labels_w  			=> '',
+	_ref_param_value_button_w          	=> '',
+	_ref_param_value_button_w_variable 	=> '',
+	_ref_values_w  					=> '',
+	_ref_values  					=> '',
+	_selected_file_name 			=> '',
+	_values_aref  					=> '',
+               
+    Inside L_SU 
+    Some of these PRVATE variables are POPULATED via an importing subroutine
+    (16 off, imported from the MAIN)
+    
+     	$add2flow_button_grey	= $hash_ref->{_add2flow_button_grey};
+ 		$check_code_button		= $hash_ref->{_check_code_button}; 		 		
+ 		$delete_from_flow_button= $hash_ref->{_delete_from_flow_button};
+ 		$dnd_token				= $hash_ref->{_dnd_token};
+ 		$dropsite_token			= $hash_ref->{_dropsite_token};
+ 	 	$file_menubutton		= $hash_ref->{_file_menubutton};
+ 	 	$flow_listbox_grey_w	= $hash_ref->{_flow_listbox_grey_w};
+  	 	$flow_listbox_green_w	= $hash_ref->{_flow_listbox_green_w};
+  		$message_w				= $hash_ref->{_message_w}; 
+   		$mw						= $hash_ref->{_mw};
+ 	 	$parameter_names_frame  = $hash_ref->{_parameter_names_frame}; 	
+ 	 	$parameter_values_frame = $hash_ref->{_parameter_values_frame};
+ 		$parameter_values_button_frame	 = $hash_ref->{_parameter_values_button_frame};	
+ 		$run_button				= $hash_ref->{_run_button}; 	 	
+ 		$save_button			= $hash_ref->{_save_button}; 
+ 		$sunix_listbox			= $hash_ref->{_sunix_listbox};
+ 	 	 		
+ 	 	 		
+ 	 	 		(16 off imported from the MAIN)
+ 		$L_SU->{_add2flow_button_grey}			= $hash_ref->{_add2flow_button_grey};
+ 		$L_SU->{_check_code_button}				= $hash_ref->{_check_code_button}; 		 		
+ 		$L_SU->{_delete_from_flow_button}		= $hash_ref->{_delete_from_flow_button};
+ 		$L_SU->{_dnd_token}						= $hash_ref->{_dnd_token};
+ 		$L_SU->{_dropsite_token}				= $hash_ref->{_dropsite_token};
+ 	 	$L_SU->{_file_menubutton}				= $hash_ref->{_file_menubutton};
+ 	 	$L_SU->{_flow_listbox_grey_w}			= $hash_ref->{_flow_listbox_grey_w};
+  	 	$L_SU->{_flow_listbox_green_w}			= $hash_ref->{_flow_listbox_green_w};
+  		$L_SU->{_message_w}						= $hash_ref->{_message_w}; 
+   		$L_SU->{_mw}							= $hash_ref->{_mw};
+ 	 	$L_SU->{_parameter_names_frame}  		= $hash_ref->{_parameter_names_frame}; 	
+ 	 	$L_SU->{_parameter_values_frame} 		= $hash_ref->{_parameter_values_frame};
+ 		$L_SU->{_parameter_values_button_frame}	= $hash_ref->{_parameter_values_button_frame};	
+ 		$L_SU->{_run_button}					= $hash_ref->{_run_button}; 	 	
+ 		$L_SU->{_save_button}					= $hash_ref->{_save_button}; 
+ 		$L_SU->{_sunix_listbox}					= $hash_ref->{_sunix_listbox};	
+ 		
+ 		
+ 		
+ 		
+ 		INSIDE conditions_gui
+ 		 	
+=head2 private hash from conditions_gui  
+
+( more than what is imported: 10 off)
+
+=cut
+
+	my $conditions_gui = {	
+		_add2flow_button_grey					=>'',
+		_is_add2flow_flow_button				=> '',
+		_is_check_code_button					=> '',
+		_is_delete_from_flow_button				=> '',
+		_is_dragNdrop							=> '',
+		_is_flow_listbox_grey_w					=> '',
+		_is_flow_listbox_green_w				=> '',
+		_is_open_file_button					=> '',
+		_is_select_file_button					=> '',
+		_is_saveas_file_button					=> '',
+		_is_sunix_listbox						=> '',
+		_is_new_listbox_selection				=> '',
+		_is_pre_built_superflow					=> '',
+		_is_superflow_select_button				=> '',
+		_is_run_button							=> '',
+		_is_save_button							=> '',
+		_is_moveNdrop_in_flow					=> '',
+		_is_user_built_flow						=> '',
+		_delete_from_flow_button				=> '',
+ 		_flow_listbox_grey_w 					=> '',
+ 		_flow_listbox_green_w 					=> '',
+ 		_flow_widget_index						=> '',
+ 		_check_code_button 						=> '',
+   		_file_menubutton 						=> '', 
+   		_run_button 							=> '', 
+  	 	_save_button 							=> '', 
+  	 	_last_flow_listbox_touched   			=> '',
+ 		_last_flow_listbox_touched_w 			=> '',
+ 		_last_flow_index_touched     	 		=> '',
+ 		_flow_widget_index						=> '',
+ 		_message_w								=> '',
+ 		_prog_name_sref							=> '',
+ 		
+ The local variables equivalent to the private hash values
+ are declared too, for easier programming ( 10 off)
+  	my $delete_from_flow_button;
+ 	my $flow_listbox_grey_w;
+ 	my $flow_listbox_green_w;
+ 	my $check_code_button;
+ 	my $file_menubutton;
+ 	my $message_w;
+ 	my $run_button;
+ 	my $save_button;
+ 	my $add2flow_button_grey; 
+ 	my $flow_widget_index;
+ 
+ 		
+ ALSO in condition_gui  (10 off)
+ 
+ sub set_gui_widgets {
+ 	my ($self,$widget_hash_ref) = @_;
+ 	
+ 	if ( $widget_hash_ref) {		
+ 		$conditions_gui->{_delete_from_flow_button} = $widget_hash_ref->{_delete_from_flow_button};		
+ 		$conditions_gui->{_flow_listbox_grey_w} 	= $widget_hash_ref->{_flow_listbox_grey_w};
+ 		$conditions_gui->{_flow_listbox_green_w} 	= $widget_hash_ref->{_flow_listbox_green_w};
+ 		$conditions_gui->{_check_code_button} 		= $widget_hash_ref->{_check_code_button};
+   		$conditions_gui->{_file_menubutton} 		= $widget_hash_ref->{_file_menubutton};
+   		$conditions_gui->{_message_w}				= $widget_hash_ref->{_message_w};
+    	$conditions_gui->{_run_button} 				= $widget_hash_ref->{_run_button};
+    	$conditions_gui->{_save_button} 			= $widget_hash_ref->{_save_button}; 
+    	$conditions_gui->{_add2flow_button_grey}	= $widget_hash_ref->{_add2flow_button_grey}; 
+    	$conditions_gui->{_flow_widget_index}		= $widget_hash_ref->{_flow_widget_index};
+    	
+    	
+ ALSO in condition_gui (10 off)
+    	
+    	$delete_from_flow_button 	= $conditions_gui->{_delete_from_flow_button}; 
+ 		$flow_listbox_grey_w 		= $conditions_gui->{_flow_listbox_grey_w};
+ 		$flow_listbox_green_w 		= $conditions_gui->{_flow_listbox_green_w};
+ 		$check_code_button 			= $conditions_gui->{_check_code_button};
+ 		$file_menubutton			= $conditions_gui->{_file_menubutton};
+ 		$message_w					= $conditions_gui->{_message_w};
+ 		$run_button 				= $conditions_gui->{_run_button};
+  		$save_button 				= $conditions_gui->{_save_button};
+  		$add2flow_button_grey		= $conditions_gui->{_add2flow_button_grey};
+  		$flow_widget_index			= $conditions_gui->{_flow_widget_index};
+  		
+  		
+  		
+  MAIN->L_SU -> pre_built_superflow
+  
+  
+  
+  IN Pre_built_superflow
+  
+  =head2 private hash_reference
+ 
+=cut
+ (13 off)
+
+ 	_add2flow_button_grey			=> '',
+ 	_check_code_button				=> '',  		 		
+ 	_delete_from_flow_button		=> '', 
+ 	 _file_menubutton				=> '',
+ 	 _flow_listbox_grey_w			=> '', 
+  	 _flow_listbox_green_w			=> '', 
+  	 _flow_listbox_sw				=> '',
+  	 _flow_lsitbox_se				=> '',
+   	 _flow_widget_index 	 		=> '', 
+  	 _message_w						=> '', 
+ 	_prog_name_sref					=> '',
+ 	_run_button						=> '', 	 	
+ 	_save_button					=> '', 
+ 
+   ALso INSIDE pre_built_superflow
+ =head2 declare variables
+
+=cut
+ (13 off)
+
+ 	my ($flow_listbox_grey_w,$flow_listbox_green_w);
+ 	my $flow_listbox_sw,$flow_listbox_se);
+ 	my $flow_widget_index;
+ 	my ($run_button,$save_button);
+ 	my ($message_w, $prog_name_sref);
+	my ($add2flow_button_grey, $check_code_button);
+	my ($delete_from_flow_button);		
+ 	my ($file_menubutton);
+ 	
+ 	ALSO in pre_built_superflow importation :
+ 		
+ 	head2 sub set_hash_ref 
+
+	imports external hash into private settings 
+ 
+=cut
+
+   (13 off) 
+ sub set_hash_ref {
+	my ($self,$hash_ref) = @_;
+
+	$add2flow_button_grey		= $hash_ref->{_add2flow_button_grey};
+	$check_code_button			= $hash_ref->{_check_code_button}; 		 		
+	$delete_from_flow_button	= $hash_ref->{_delete_from_flow_button};
+	$file_menubutton			= $hash_ref->{_file_menubutton};
+ 	$flow_listbox_grey_w		= $hash_ref->{_flow_listbox_grey_w};
+  	$flow_listbox_green_w		= $hash_ref->{_flow_listbox_green_w};
+  	$flow_listbox_se			= $hash_ref->{_flow_listbox_se};
+  	$flow_listbox_sw			= $hash_ref->{_flow_listbox_sw}; 	 	
+   	$flow_widget_index 	 		= $hash_ref->{_flow_widget_index};
+  	$message_w					= $hash_ref->{_message_w}; 
+ 	$prog_name_sref				= $hash_ref->{_prog_name_sref};
+ 	$run_button					= $hash_ref->{_run_button}; 	 	
+ 	$save_button				= $hash_ref->{_save_button};
+ 	
+ 	$superflow->{_add2flow_button_grey}			= $hash_ref->{_add2flow_button_grey};
+ 	$superflow->{_check_code_button}			= $hash_ref->{_check_code_button}; 		 		
+ 	$superflow->{_delete_from_flow_button}		= $hash_ref->{_delete_from_flow_button};
+ 	$superflow->{_file_menubutton}				= $hash_ref->{_file_menubutton};
+ 	$superflow->{_flow_listbox_grey_w}			= $hash_ref->{_flow_listbox_grey_w};
+  	$superflow->{_flow_listbox_green_w}			= $hash_ref->{_flow_listbox_green_w};
+  	$superflow->{_flow_listbox_se}				= $hash_ref->{_flow_listbox_se};
+  	$superflow->{_flow_listbox_sw}				= $hash_ref->{_flow_listbox_sw};
+   	$superflow->{_flow_widget_index} 	 		= $hash_ref->{_flow_widget_index};
+	$superflow->{_message_w}					= $hash_ref->{_message_w};
+	$superflow->{_prog_name_sref}				= $hash_ref->{_prog_name_sref};	
+ 	$superflow->{_run_button}					= $hash_ref->{_run_button}; 	 	
+ 	$superflow->{_save_button}					= $hash_ref->{_save_button};
+ 	
+  	return();
+  }
+  
+ 
+ 
+ INSIFE file_dialog which is called from FileDialog_button inside L_SU
+ 
+ ==head2 private hash
+
+22 off  = set from out side with individual subroutines
+The rest are set from outside with 2 massive hash/gui refs
+
+	set_gui_widgets  	= 13
+	set_hash        	= 2
+	set_flow_type  		=	1
+	set_dialog_type	 	=	1
+	 set_flow_type      =    1 
+	 
+	  unset = 4
+	  
+	  total = 22
+	
+=cut
+
+	my $file_dialog = {
+		
+		_add2flow_button_grey		=> '', set_gui_widgets 
+		_check_code_button			=> '', set_gui_widgets 
+		_delete_from_flow_button	=> '', set_gui_widgets 
+		_dialog_type				=> '',	set_dialog_type	
+		_file_menubutton			=> '', set_gui_widgets 
+		_flow_listbox_grey_w		=> '', set_gui_widgets 
+		_flow_listbox_green_w		=> '', set_gui_widgets 
+		_flow_widget_index			=> '', 	set_hash
+		_flow_type					=> '', 	set_flow_type
+		_is_flow_listbox_grey_w		=> '', 
+		_is_flow_listbox_green_w	=> '',
+		_is_flow_listbox_se			=> '',
+		_is_flow_listbox_sw			=> '',
+		_message_w					=> '',	set_gui_widgets 	
+		_mw							=> '',	 set_gui# main window widget
+		_parameter_values_frame		=> '',	set_gui_widgets 
+		_parameter_value_idx     	=> '',	set_gui_widgets 
+		_prog_name_sref    			=> '',	 set_dialog_type			
+		_run_button					=> '',	set_gui_widgets 
+		_save_button				=> '',	set_gui_widgets 
+		_values_aref				=> '',	set_gui_widgets 
+		
+	};
+ 
+ 
+ 	(BUt 7 off) 
+	my $message_w;		
+	my $mw;
+	my $parameter_values_frame;
+	my $parameter_value_idx;
+	my $values_aref;
+	my ($flow_listbox_grey_w,$flow_listbox_green_w);
+	
+
+ALSO inside file_dialog
+
+(and 13 off)
+	
+ sub set_gui_widgets {
+ 	my ($self,$gui_widgets) = @_;
+ 	
+ 	if ( $gui_widgets) {
+
+    	$file_dialog->{_add2flow_button_grey}		= $gui_widgets->{_add2flow_button_grey};
+ 		$file_dialog->{_check_code_button} 			= $gui_widgets->{_check_code_button}; 		
+		$file_dialog->{_delete_from_flow_button} 	= $gui_widgets->{_delete_from_flow_button};
+ 		$file_dialog->{_file_menubutton} 			= $gui_widgets->{_file_menubutton}; 			
+ 		$file_dialog->{_flow_listbox_grey_w} 		= $gui_widgets->{_flow_listbox_grey_w};
+ 		$file_dialog->{_flow_listbox_green_w} 		= $gui_widgets->{_flow_listbox_green_w};		
+ 		$file_dialog->{_mw} 						= $gui_widgets->{_mw};		
+ 		$file_dialog->{_parameter_values_frame} 	= $gui_widgets->{_parameter_values_frame};
+		$file_dialog->{_parameter_value_idx}		= $gui_widgets->{_parameter_value_idx};
+		$file_dialog->{_message_w}					= $gui_widgets->{_message_w};
+		$file_dialog->{_values_aref}				= $gui_widgets->{_values_aref};
+		$file_dialog->{_run_button} 				= $gui_widgets->{_run_button};
+    	$file_dialog->{_save_button} 				= $gui_widgets->{_save_button}; 
+
+
+   7 off gui widgets
+		
+		$mw											= $file_dialog->{_mw};
+		$parameter_values_frame						= $file_dialog->{_parameter_values_frame};
+		$parameter_value_idx						= $file_dialog->{_parameter_value_idx};
+		$values_aref								= $file_dialog->{_values_aref};
+ 		$message_w									= $file_dialog->{_message_w};
+ 		$flow_listbox_grey_w						= $file_dialog->{_flow_listbox_grey_w};
+ 		$flow_listbox_green_w						= $file_dialog->{_flow_listbox_green_w};
+=cut
+
+
+( 13 off)  N.B. 7 + 13 =20 gui widgets
+ sub set_hash_ref {
+ 	my ($self,$hash_ref) = @_;
+ 	
+ 	if ( $hash_ref) {
+    	$file_dialog->{_add2flow_button_grey}		= $hash_ref->{_add2flow_button_grey};
+ 		$file_dialog->{_check_code_button} 			= $hash_ref->{_check_code_button}; 		
+		$file_dialog->{_delete_from_flow_button} 	= $hash_ref->{_delete_from_flow_button};		
+ 		$file_dialog->{_flow_listbox_grey_w} 		= $hash_ref->{_flow_listbox_grey_w};
+ 		$file_dialog->{_flow_listbox_green_w} 		= $hash_ref->{_flow_listbox_green_w};
+    	$file_dialog->{_flow_widget_index}			= $hash_ref->{_flow_widget_index};	
+   		$file_dialog->{_file_menubutton} 			= $hash_ref->{_file_menubutton};
+ 		$file_dialog->{_is_flow_listbox_grey_w}		= $hash_ref->{_is_flow_listbox_grey_w };
+		$file_dialog->{_is_flow_listbox_green_w}	= $hash_ref->{_is_flow_listbox_green_w};  		
+   		$file_dialog->{_message_w}					= $hash_ref->{_message_w};
+   		$file_dialog->{_mw}							= $hash_ref->{_mw}; 		
+    	$file_dialog->{_run_button} 				= $hash_ref->{_run_button};
+    	$file_dialog->{_save_button} 				= $hash_ref->{_save_button}; 
+ 			
+ 	} else {
+		
+ 		print("file_dialog, set_gui_widgets, missing hash_ref\n");
+ 	}
+ 	return();
+ }	
+ 		

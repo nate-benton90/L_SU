@@ -1,0 +1,172 @@
+#!/usr/local/bin/perl -w
+
+our $VERSION = '2.10';
+
+=head1 DOCUMENTATION
+
+=head2 SYNOPSIS
+
+  PROGRAM NAME: Sucat
+  Purpose: Concatenate a series files 
+  AUTHOR:  Juan M. Lorenzo DEPENDS: cat from bash 
+  DATE:    May 25 1
+           Includes acces to a simple configuration file
+           Simple file is called Sucat.config
+           Access to simple file is via Sucat2_config.pl
+           Sucat2_config.pl uses Config::Simple (jdhedden)
+           as well as SeismicUnix and SystemVariables 
+           packages
+
+  DESCRIPTION: 
+
+=head2 USAGE
+ 
+ Sucat 
+
+=head2 NEEDS 
+ 
+ ~libAll/Sucat.config 
+ /usr/local/pl/Sucat2_config.pl
+ /usr/local/pl/libAll/read.pm
+
+=head2 EXAMPLES 
+ 
+ Sucat_config.pl
+  Builds a hash of the configuration parameters 
+
+=head2 NOTES 
+
+ We are using Moose.
+ Moose already declares that you need debuggers turned on
+ so you don't need a line like the following:
+ use warnings;
+ 
+ USES the following classes:
+ flow
+ message
+ sucat
+ and packages of subroutines
+ #System_Variables
+
+=cut
+
+ use Moose;
+ use readfiles;
+ use flow;
+ use message;
+ use sucat;
+ use manage_files_by;
+ use SeismicUnix qw ($in $out $on $go $to $suffix_ascii $off $suffix_su);
+
+=head2 Declare variables 
+
+    in local memory space
+
+
+=cut
+
+  my (@file_out,@flow, @items, @cat,@sufile_out,@outbound);
+
+=head2 2. Instantiate classes:
+
+ Create a new version of the package  with a unique name
+
+=cut
+
+  my $log 			= new message();
+  my $run    			= new flow();
+  my $cat			= new sucat();
+  my $read			= new readfiles();
+
+=head2 Get configuration information
+
+=cut
+
+  my ($err,$CFG) = $read -> cfg("/usr/local/pl/Sucat_config.pl");
+
+  my $first_file_number = $CFG->{sucat}{1}{first_file_number};
+  my $last_file_number  = $CFG->{sucat}{1}{last_file_number};
+  my $number_of_files   = $CFG->{sucat}{1}{number_of_files};
+  my $inbound_directory = $CFG->{sucat}{1}{inbound_directory};
+  my $list    			= $CFG->{sucat}{1}{list};
+  my $list_directory    = $CFG->{sucat}{1}{list_directory};
+  my $output_file_name  = $CFG->{sucat}{1}{output_file_name};
+  my $input_suffix  	= $CFG->{sucat}{1}{input_suffix};
+
+  #print("$inbound_directory\n\n");
+  #print("$first_file_number\n\n");
+
+=head2 Check configuration file for errors
+
+=cut
+
+if ( $err) {
+     print(STDERR $err, "\n");
+         exit(1);
+         }
+
+
+=head2 3. Declare file names 
+
+  In this version inbound and outbound directories
+  are identical
+  If a list exists then read it
+
+=cut
+
+  $file_out[1] 		    = $output_file_name;
+  $sufile_out[1]	    = $file_out[1].$suffix_su;
+  $outbound[1]              = $inbound_directory.'/'.$sufile_out[1]; 
+
+ my @ref_array;
+ my $ref_array;
+ my $num_rows;
+
+  if($list)     {
+	($ref_array,$num_rows) = $read->cols_1($list);
+        print("ref_array is @$ref_array num_rows is $num_rows\n\n");
+  }
+
+=head2 4. create script to concatenate files
+
+ files can be sequential and have
+ numeric names or they can be in a list;
+ either way supply a directory
+
+=cut
+
+ $cat     -> clear();
+
+ if ($list) {
+  $cat     -> list_array($ref_array);
+  $cat     -> list_directory($list_directory);
+ }else {
+
+  $cat     -> first_file_number($first_file_number);
+  $cat     -> last_file_number($last_file_number);
+  $cat     -> number_of_files($number_of_files);
+ }
+
+ $cat     -> inbound_directory($inbound_directory);
+ $cat     -> input_suffix($input_suffix);
+ $cat[1]   = $cat->Step();
+
+=head2 A. DEFINE FLOW(S)
+
+=cut
+
+ @items   = ($cat[1],$out,$outbound[1],$go);
+ $flow[1] = $run->modules(\@items);
+
+=head2  B. RUN FLOW(S)
+
+=cut
+
+ $run->flow(\$flow[1]);
+
+=head2 C. LOG FLOW(S)TO SCREEN AND FILE
+
+=cut
+
+ print  "$flow[1]\n";
+#$log->file($flow[1]);

@@ -1,0 +1,143 @@
+#! /usr/bin/perl
+# -w
+ use strict;
+ use warnings;
+
+=pod
+
+=head1 DOCUMENTATION
+
+=head2 SYNOPSIS 
+
+ PROGRAM NAME: surms.pl
+ AUTHOR: Juan Lorenzo
+ DATE: Oct 7 2012
+ DESCRIPTION: script to extract rms amplitudes of traces
+ Version 1
+
+ STEPS ARE:;
+
+=cut
+
+ use SU;
+ my $log 	= new message();
+ my $surms 	= new sumax();
+ my $run    	= new flow();
+
+=pod
+
+ import variables
+
+=cut
+  use lib '/usr/local/pl/libAll';
+   use Project;
+  my $Project = new Project();
+  use Sqlite qw ( $db $filename);
+  use SeismicUnix qw ($rms_amp $rms $ascii $to_outpar_file $suffix_hyphen $suffix_ascii $surms_notes $suffix_su);
+# use library@out
+# Bring in directory definitions  
+  my ($TEMP_DATA_SEISMIC_SU) 	= $Project->TEMP_DATA_SEISMIC_SU();
+  my ($DATA_SEISMIC_SU)		= $Project->DATA_SEISMIC_SU();
+  my ($DATABASE_SEISMIC_SQLITE) = $Project->DATABASE_SEISMIC_SQLITE();
+
+# use library
+  use lib './libAll';
+  use SU;
+  use Surms;
+
+# declare local arrays 
+  my @flow;
+  my (@db_file_name,@dbhlite_inbound);
+  my (@cat,@cat_inbound);
+  my (@surms,@surms_sufile,@surms_inbound);
+  my ($N, $num_files, $surms_inbound);
+  my ($key1,$key2);
+  my @array_key1;
+
+# declare database file names
+  $db_file_name[1]	      	= $db.'1';
+  $dbhlite_inbound[1]        	= $DATABASE_SEISMIC_SQLITE.'/'.$db_file_name[1];
+
+
+# SUMAX parameters
+  my(	$ref_surms_mode,
+	$ref_surms_key,
+	$ref_surms_output,
+	$ref_surms_verbose_format,
+	$surms_outpar,
+	$ref_surms_notes,
+	$surms_Pmax
+   	)   = Surms::surms();
+
+# The following works as well but does not incorporate
+# multiple files  [N != 1]into the stream
+# nor does in include an additional subroutine that is not inherited
+
+$surms->mode($rms); 
+$surms->key($rms_amp); 
+$surms->verbose($to_outpar_file); 
+$surms->outpar($TEMP_DATA_SEISMIC_SU.'/'.$suffix_hyphen.$rms_amp.$suffix_ascii); 
+$surms->output($ascii); 
+my $surms_notes = $surms->note();
+my $surms_Step = $surms->Step();
+#print("Step is: $surms_Step\n\n");
+#my $surms_notep[1] = surms->note(); 
+
+
+# only 1 panel in this case; $P=1
+        my $P = $surms_Pmax;
+
+# CAT parameters
+  $cat_inbound[1] 	= $surms_outpar; 
+
+# FILE_LIST PARAMETERS
+  my (  $ref_sufile
+	)   = Sqlite::get_file_list(\@dbhlite_inbound);
+  $num_files = scalar (@$ref_sufile);
+
+# uncomment following line when debugging
+#$num_files =1;
+for ($N=0;$N<$num_files; $N++) {
+   	$surms_sufile[$N]	= $$ref_sufile[$N];
+   	$surms_inbound     	= $DATA_SEISMIC_SU.'/'.$surms_sufile[$N]; 
+        print("Processing $N of $num_files\n\n");
+        print("Processing @$ref_sufile[$N]\n\n");
+
+# SUMAX PROGRAM
+       $surms[$N]      =("sumax                               	\\
+                mode=$$ref_surms_mode[$P]                       \\
+                output=$$ref_surms_output[$P]                   \\
+                verbose=$$ref_surms_verbose_format[$P]          \\
+                outpar=$surms_outpar 		                \\
+                ");
+
+# DEFINE FLOW(s)
+	$flow[1]  =   (" $surms[$N]				\\
+			< $surms_inbound			\\
+		 ");  
+
+# RUN FLOW (s)
+  system $flow[1];
+  #system, 'echo', $flow[1];
+
+# FUNCTION CAT
+       $cat[$N]		= (`cat 		\\
+				$cat_inbound[1]	\\
+			`);
+
+# END OF RUN FLOWS
+# LOG FLOW
+# system 'echo', $flow[1];
+ my $expon = $cat[$N];
+ $cat[$N] = sprintf("%d",$expon);
+
+}
+# message
+  print("Done processing ($N-1) of $num_files\n\n");
+  print("Note: surms is converted to integer %d\n\n");
+  $key1        = $rms;
+  $key2        = $filename;
+  # all the rms values assigned to an array 
+  @array_key1  = @cat;
+  my $table    = 'segy';
+  Sqlite::update($key1,\@array_key1,$key2,$ref_sufile,\$dbhlite_inbound[1],$table);

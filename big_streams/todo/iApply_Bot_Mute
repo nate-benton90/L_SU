@@ -1,0 +1,93 @@
+#! /usr/bin/perl  -w
+
+# SCRIPT NAME
+# iApply_bot_mute.pl
+# Purpose: Linear Bot Mute of Data 
+# V1.
+# Aug 9, 2011
+
+
+# Use shell transparently to locate home directory before compilation
+
+        my $library_location;
+
+        BEGIN {
+                use Shell qw(echo);
+
+                $home_directory = ` echo \$HOME`;
+                chomp $home_directory;
+  #              $library_location = $home_directory.'/lsu/libAll';
+        }
+
+# LOAD GENERAL PERL LIBRARY
+  #use lib $library_location;
+
+# LOAD SEISMIC UNIX GLOBAL SYSTEM LIBARAY
+  #use lib '/usr/local/pl/libAll';
+  use SeismicUnix;
+  use SeismicUnix qw ($on $off $ibot_mute $itemp_bot_mute_picks_ $itemp_bot_mute_num_points_ $itemp_bot_mute_picks_sorted_par_ $ibot_mute_par_ $suffix_su $suffix_hyphen);
+
+# library path
+  #use lib './libAll';
+
+# use library
+  use System_Variables2;
+  my ($DATA_SEISMIC_SU) 	= System_Variables2::DATA_SEISMIC_SU();
+
+# use library
+  use iBot_Mute qw ($file_name);
+
+# sufile names
+$N=1;
+  $sufile_in[$N] 		= $file_name;
+  $sufile_out[$N] 		= $sufile_in[1].$suffix_hyphen.$ibot_mute;
+  $inbound[$N]	  		= $DATA_SEISMIC_SU.'/'.$sufile_in[1].$suffix_su;
+  $outbound[$N]  		= $DATA_SEISMIC_SU.'/'.$sufile_out[1].$suffix_su;
+$N=0;
+
+# SUMUTE parameters
+  my(   $ref_sumute_key,$ref_sumute_pick_file_outbound,
+	$ref_sumute_par_file_inbound,$ref_sumute_type,
+	$ref_sumute_note,$ref_sumute_taper_pts,$sumute_Nmax
+	)   = iBot_Mute::sumute();
+
+# MUTE DATA 
+$sumute_N=$sumute_Nmax;
+for($N=1;$N<=$sumute_N;$N++) {;
+	$sumute[$N]  =  (" sumute 	            		\\
+		par=$$ref_sumute_par_file_inbound[$N]		\\
+		key=$$ref_sumute_key[$N]			\\
+		ntaper=$$ref_sumute_taper_pts[$N]		\\
+		mode=$$ref_sumute_type[$N]			\\
+              ");
+}
+$N=0;
+
+#SUWIND  PARAMETERS
+  my($ref_suwind_key,$ref_suwind_min,$ref_suwind_max,$suwind_Nmax) = iBot_Mute::suwind();
+
+# SUWIND 
+$suwind_N = $suwind_Nmax;
+for($N=1;$N<=$suwind_N;$N++){
+	$suwind[$N]  =  (" suwind 	            		\\
+		key=$$ref_suwind_key[$N]			\\
+		min=$$ref_suwind_min[$N]			\\
+		max=$$ref_suwind_max[$N]			\\
+              ");
+}
+$N=0;
+
+
+#  DEFINE FLOW(S)
+	$flow[1] = (" 						\\
+		$suwind[1] 	 				\\
+		< $inbound[1] |					\\
+		$sumute[1]   	 				\\
+		> $outbound[1]					\\
+		&						\\
+		"); 
+
+# RUN FLOW(S)
+       system $flow[1]; 
+       system 'echo', $flow[1];	
+

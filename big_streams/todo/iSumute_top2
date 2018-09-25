@@ -1,0 +1,135 @@
+#! /usr/bin/perl
+
+# SCRIPT NAME
+# Purpose: Linear Mute of Data 
+# Juan M. Lorenzo
+# April 2 2009 
+# Modified to work with erine lsu1 Nov 21, 2009
+
+# Aug. 15, 2011- end of WWII in 1945 
+# V 1.2
+# Modified to work with file checking options (files that =1 or =0) 
+# on the first lines of special files.
+# Use shell transparently to locate home directory before compilation
+
+# LOAD SEISMIC UNIX GLOBAL SYSTEM LIBARAY
+  use lib '/usr/local/pl/libAll';
+  use SeismicUnix qw ($itop_mute_par_ $itemp_top_mute_num_points $suffix_top_mute $suffix_su);
+
+# library path
+  use lib './libAll';
+
+# use library
+  use Project;
+  my $Project = new Project();
+  use iTop_Mute qw ($file_name $panel_first $panel_last $panel_inc $traces_per_panel);
+
+# import system variables
+  my ($DATA_SEISMIC_SU) = $Project->DATA_SEISMIC_SU();
+
+# sufile names
+  $sufile_in[1] 		= $file_name;
+  $inbound[1]	  		= $DATA_SEISMIC_SU.'/'.$sufile_in[1].$suffix_su;
+
+# SUMUTE parameters
+  my(   $ref_sumute_key,$ref_sumute_pick_file_outbound,
+	$ref_sumute_par_file_inbound,$ref_sumute_type,
+	$ref_sumute_note,$sumute_Nmax
+	)   = iTop_Mute::sumute();
+
+#print("sumute note=$$ref_sumute_note[1]\n\n");
+# MUTE DATA 
+$sumute_N=$sumute_Nmax;
+for($N=1;$N<=$sumute_N;$N++) {;
+	$sumute[$N]  =  (" sumute 	            		\\
+		par=$$ref_sumute_par_file_inbound[$N]		\\
+		key=$$ref_sumute_key[$N]			\\
+		mode=$$ref_sumute_type[$N]			\\
+              ");
+}
+$N=0;
+
+# SUGAIN parameters
+  my(   $ref_sugain_wagc,$ref_sugain_agc,
+	$ref_sugain_pbal,$ref_sugain_note,
+	$sugain_Nmax
+	)   = iTop_Mute::sugain();
+
+# SUGAIN 
+$sugain_N=$sugain_Nmax;
+for($N=1;$N<=$sugain_N;$N++) {;
+	$sugain[$N]  =  (" sugain 	  			\\
+		wagc=$$ref_sugain_wagc[$N]		  	\\
+		pbal=$$ref_sugain_pbal[$N]	  		\\
+		agc=$$ref_sugain_agc[$N]	  		\\
+     ");
+}
+$N=0;
+
+
+# FILTER  DATA
+# # filter data
+	$sufilter_bandpass[1] ='0,3,300,600';
+	$sufilter_note[1] = '\ bpf='.$sufilter_bandpass[1];
+
+	$sufilter[1] =  (" sufilter 	            		\\
+		f=$sufilter_bandpass[1]				\\
+	   ");
+
+# DISPLAY DATA
+	$suximage[1] =  (" suximage				\\
+		windowtitle=$sufile_in[1]' '$date		\\
+		title=$$ref_sugain_note[1]$sufilter_note[1]$$ref_sumute_note[1]\\
+		label1='Time (s)' 				\\
+		label2='No. traces'				\\
+		perc=99						\\
+		n2tic=1 d2num=20				\\
+		wbox=400 hbox=700 xbox=900 ybox=0		\\
+		");
+
+# DISPLAY DATA
+		$box_width = 400;
+		$xlabel    = 'offset (m) DIGITIZE ME';
+		$tlabel    = 'TWTT (s)';
+		$X0        = 450;
+		$mute_picks_file[1] = '.itemp_mute_picks_'.$sufile_in[1];
+
+	$suxwigb[1] =  (" suxwigb				\\
+		key=offset					\\
+		title=$$ref_sugain_note[1]$sufilter_note[1]	\\
+		windowtitle=$sufile_in[1]' '$date		\\
+		wbox=$box_width					\\
+		label2='$xlabel'				\\
+		label1='$tlabel'				\\
+		xbox=$X0 ybox=0					\\
+		mpicks=$mute_picks_file[1]			\\
+		perc=99						\\
+		"); 
+
+#  DEFINE FLOW(S)
+	$flow[1] = (" 						\\
+		$sumute[1] 	 				\\
+		< $inbound[1] |					\\
+		$sugain[2] | 					\\
+		$sufilter[1] |					\\
+		$suximage[1]					\\
+		&						\\
+		"); 
+
+#  DEFINE FLOW(S)
+	$flow[2] = (" 						\\
+		$sugain[2]  					\\
+		< $inbound[1] |					\\
+		$sufilter[1] |					\\
+		$suxwigb[1]					\\
+		&						\\
+		"); 
+
+
+# RUN FLOW(S)
+       system $flow[1]; 
+       system 'echo', $flow[1];	
+
+       system $flow[2]; 
+       system 'echo', $flow[1];	
+

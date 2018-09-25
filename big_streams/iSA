@@ -1,0 +1,4 @@
+#!/bin/bash
+
+perl /usr/local/pl/big_streams/iSpectralAnalysis.pl
+

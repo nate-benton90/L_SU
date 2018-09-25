@@ -1,0 +1,15 @@
+#  		   # Force the latest change in the gui to propagate into the stored parameter widgets
+#  		   # We do this because the Entry change in the GUI, 
+#  		   # enacted in another instance of param_widgets 
+#		   # has to be also update into the memory space of the current param_widget isntance
+#  		    my $selected_Entry_widget 	= $parameter_values_frame->focusCurrent;
+#		    $param_widgets				->set_entry_button_chosen_widget($selected_Entry_widget);
+#
+#			# Need to set the length and first_idx
+#			$param_widgets				->set_first_idx($first_idx);
+#			$param_widgets				->set_length($length);
+#					 
+#		    my $parameter_value_index 	= $param_widgets->get_entry_button_chosen_index();
+#			my $entry_button_value 		= $param_widgets->get_value4entry_button_chosen();
+#   		    					 print("grey_flow _check4parameter_changes,entry value: $entry_button_value\n");
+#  			$param_widgets 				-> set_value4entry_button_chosen($entry_button_value);

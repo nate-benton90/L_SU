@@ -1,0 +1,869 @@
+#! /usr/bin/perl -w
+
+=pod
+
+=head1 DOCUMENTATION
+
+=head2 SYNOPSIS 
+
+NAME:     SuDisp2_1.pl 
+Author:   Juan M. Lorenzo 
+Date:     SuDisp2.pl July 27, 2011 
+Purpose:  estimate surface wave dispersion  
+Date:     SuDisp2_1.pl May 24, 2012 
+Changes:  guess fft lengths, new System Variables location
+
+ tau-p info
+ "p"     "p"  "p"
+  m/s     km/s    s/km  s/m
+  2000    2       0.5   .0005   
+  1500    1.50    0.666 .000666
+  330     0.33    3.03  .00303 
+  200     0.20    5.0   .005    
+  100     0.10   10.0   .01     
+   50     0.05   20.0   .02     
+  infinity inf    0.0    .0       
+
+STEPS
+ 1) convert X-T data to P-Tau data
+ 2) fft(p-tau) ---> p-freq data
+ 3) extract rms(frequency) $ each p
+ 4) normalize p-freq data against rms
+ 5) pick p-freq data
+# 6) invert p-freq data
+
+=cut
+
+# LOAD GENERAL PERL LIBRARY
+        use lib './libAll';  
+
+# Use shell transparently to locate home directory before compilation
+        my $library_location;
+
+        BEGIN {
+      use Shell qw(echo);
+      $home_directory = ` echo \$HOME`;
+      chomp $home_directory;
+      $library_location = $home_directory.'/lsu/libAll';
+        }
+
+# LOAD GENERAL PERL LIBRARY
+  use lib $library_location;
+
+# CLASSES 
+  use lib '/usr/local/pl';
+  use manage_files_by;
+
+# library path
+  use lib '/usr/local/pl/libAll';
+
+# import system variables
+  use SeismicUnix qw ($on $off $suffix_taup $suffix_su $suffix_fp $suffix_bin);
+
+# use library
+   use Project;
+  my $Project = new Project();
+
+# import system variables
+  my ($DATA_SEISMIC_SU) = $Project->DATA_SEISMIC_SU();
+  my ($PL_SEISMIC) 	= $Project->PL_SEISMIC();
+
+# library path
+  use lib './libAll';
+  my ($date)	 	= Project_Variables::date();
+
+  use SuDisp2_1 qw (
+		  $file_name $interpolation 
+		  $interpolation_factor 
+	          $panel_first $panel_last 
+		  $panel_inc 
+		  $traces_per_panel 
+		  $first_tracf_num
+		  $ns_fft
+		  $d1
+		);
+
+# INPUT SUFILE NAME 
+$N=1;
+ $sufile_in[$N] 	= $file_name;
+$N=0;
+
+# INBOUND SUFILE NAMES with path
+$N=1;
+ $inbound[$N]		 = $DATA_SEISMIC_SU.'/'.$sufile_in[$N].$suffix_su;
+$N=0;
+
+# OUTBOUND f-p FILE NAMES with path
+ $N=1;
+for ($panel = $panel_first; $panel <= $panel_last; $panel = $panel + $panel_inc) {
+ $fp_outbound[$panel] = $DATA_SEISMIC_SU.'/'.$sufile_in[$N].$suffix_fp.'_panel_'.$panel.$suffix_su;
+}
+$N=0;
+
+# OUTBOUND summed f-p FILE NAMES with path
+ $N=1;
+ $suop2_outbound_m[1] = $DATA_SEISMIC_SU.'/'.$sufile_in[$N].$suffix_fp.'_panels_All'.$suffix_su;
+ $suop2_outbound_n[1] = $DATA_SEISMIC_SU.'/'.$sufile_in[$N].$suffix_fp.'_panels_temp'.$suffix_su;
+$N=0;
+
+# SUTAUP parameters
+  my(	$sutaup_pmin,
+	$sutaup_pmax,
+	$sutaup_dx,
+	$sutaup_npoints,
+	$sutaup_fmin,
+     	$sutaup_np,
+	$sutaup_compute_in,
+	$sutaup_Nmax
+   	)   = SuDisp2_1::sutaup();
+
+# SUGAIN parameters
+  my(   $ref_sugain_wagc,$ref_sugain_agc,
+	$ref_sugain_pbal,$ref_sugain_note,
+	$sugain_Nmax
+	)   = SuDisp2_1::sugain();
+
+# SUFILTER parameters 
+  my($ref_sufilter_bandpass,$sufilter_Nmax) 			
+	= SuDisp2_1::sufilter();
+
+# SUINTERP parameters
+ my($ref_suinterp_factor,$ref_suinterp_smooth_ns_t,
+	$ref_suinterp_smooth_tr,$ref_suinterp_note,$suinterp_Nmax)
+	= SuDisp2_1::suinterp();
+
+# SMOOTH PARAMETERS
+  my($ref_smooth2_ns,$ref_smooth2_num_trace,
+	$ref_smooth2_r1,$smooth2_Nmax) 	
+	= SuDisp2_1::smooth2();
+
+#SUWIND  PARAMETERS
+  my($ref_suwind_key,$ref_suwind_min,$ref_suwind_max,
+         $ref_suwind_note,$suwind_Nmax) 	
+        = SuDisp2_1::suwind();
+
+#SUMAX parameters
+  my($ref_sumax_mode,$ref_sumax_verbose_format,
+        $ref_sumax_outpar,$sumax_Nmax) 			
+	= SuDisp2_1::sumax();
+
+#SUSHW PARAMETERS
+  my($ref_sushw_key,$ref_sushw_a,$ref_sushw_outbound,
+        $sushw_Nmax) 	
+ 	= SuDisp2_1::sushw();
+
+# GAWK PARAMETERS
+  my($ref_gawk_num_lines,$ref_gawk_infile,$gawk_Nmax) 
+	= SuDisp2_1::gawk();
+
+# SUAMP parameters
+  my($ref_suamp_outbound,$ref_suamp_freq_amp,$suamp_Nmax) 
+	= SuDisp2_1::suamp();
+
+# SUPTQUO PARAMETERS 
+  my($ref_supanel_div_by_trace_PANEL,
+	$ref_supanel_div_by_trace_TRACE,
+	$suptquo_Nmax) 					
+	= SuDisp2_1::suptquo();
+
+# SUADDHEAD parameters
+  my($ref_suaddhead_ns,$suaddhead_Nmax) 	
+	= SuDisp2_1::suaddhead();
+
+#A2B parameters
+  my($ref_a2b_flts_per_line,$a2b_Nmax) 		
+	= SuDisp2_1::a2b();
+
+# SUFLIP PARAMETERS
+  my($ref_suflip_transpose,$suflip_Nmax) 
+	= SuDisp2_1::suflip();
+
+
+
+# SUFILTER 
+$sufilter_N = $sufilter_Nmax;
+for($N=1;$N<=$sufilter_N;$N++){
+	$sufilter[$N] =  (" sufilter 		  		\\
+		f=$$ref_sufilter_bandpass[$N]			\\
+     ");
+}
+$N=0;
+
+# SUINTERP 
+$suinterp_N = $suinterp_Nmax;
+for($N=1;$N<=$suinterp_N;$N++){
+        $num_tr_between[$N] = $$ref_suinterp_factor[$N] -1;	
+								
+	$suinterp[$N] =  (" suinterp 		  		\\
+		ninterp=$num_tr_between[$N]			\\
+		lent=$$ref_suinterp_smooth_ns_t[$N]		\\
+		lenx=$$ref_suinterp_smooth_tr[$N]		\\
+     ");
+}
+$N=0;
+
+
+# SUTAUP
+$sutaup_N = $sutaup_Nmax;
+for($N=1;$N<=$sutaup_N;$N++) {;
+	$sutaup[$N]  = (" sutaup				\\
+		fmin=$sutaup_fmin				\\
+		npoints=$sutaup_npoints				\\
+		dx=$sutaup_dx				        \\
+		np=$sutaup_np					\\
+		option=$sutaup_compute_in 			\\
+		pmin=$sutaup_pmin        			\\
+	 	pmax=$sutaup_pmax        			\\
+	");
+}
+$N=0;
+
+# SUGAIN 
+$sugain_N=$sugain_Nmax;
+for($N=1;$N<=$sugain_N;$N++) {;
+	$sugain[$N]  =  (" sugain 	  			\\
+		wagc=$$ref_sugain_wagc[$N]		  	\\
+		pbal=$$ref_sugain_pbal[$N]	  		\\
+		agc=$$ref_sugain_agc[$N]	  		\\
+     ");
+}
+$N=0;
+
+
+# SMOOTH
+$N=1;
+$smooth2_N=$smooth2_Nmax;
+for($N=1;$N<=$smooth2_N;$N++) {;
+	$smooth2[$N] = (" smooth2				\\
+		n1=$$ref_smooth2_ns[$N]				\\
+		n2=$$ref_smooth2_num_trace[$N]			\\
+		r1=$$ref_smooth2_r1[$N]				\\
+		   ");
+}
+$N=0;
+
+$N=1;
+# SU FLIP DATA
+$suflip_N=$suflip_Nmax;
+for($N=1;$N<=$suflip_N;$N++) {;
+        $suflip[$N] = (" suflip                                 \\
+                        flip=$$ref_suflip_transpose[$N]         \\
+                ");
+}
+$N=0;
+
+
+# MULTIPLE-PANEL PROGRAMS
+
+# SUWINDOW  
+# by tracf
+	for ($panel=$panel_first,$num_panel=1; $panel<=$panel_last; $panel = $panel + $panel_inc,$num_panel++){
+	$P=$panel;
+
+	$suwind[$P] =  (" suwind 	  				\\
+		key=$$ref_suwind_key[$P]   				\\
+		min=$$ref_suwind_min[$P]   				\\
+		max=$$ref_suwind_max[$P]   				\\
+     ");
+
+# GAWK
+        $gawk[$P]=(" gawk \'NR<= $$ref_gawk_num_lines[$P] { print \$2 > \"/dev/stdout\" }\' $$ref_gawk_infile[$P] "); 
+
+# SUMAX
+        $sumax[$P]      =("sumax                                	\\
+                mode=$$ref_sumax_mode[$P]                            	\\
+                verbose=$$ref_sumax_verbose_format[$P]               	\\
+                outpar=$$ref_sumax_outpar[$P]                        	\\
+                ");
+
+# SUPTQUO
+        $supanel_div_by_trace[$P] = ( " suptquo                 	\\
+                ");
+
+# SUSHW
+        $sushw[$P]      = (" sushw                              	\\
+                key=$$ref_sushw_key[$P]                              	\\
+                a=$$ref_sushw_a[$P]                                  	\\
+                ");
+
+# SELECT SPECTRAL MODE   
+        $suamp[$P] =  (" suamp                                  	\\
+                        mode=$$ref_suamp_freq_amp[$P]                	\\
+     ");
+}
+# END MULTIPLE-PANEL PROGRAMS
+
+
+# SUADDHEAD
+$N=1;
+	$suaddhead[$N]	= (" suaddhead				\\
+		ns=$$ref_suaddhead_ns[$N]			\\
+		");
+$N=0;
+
+# SUSHW
+#$N=1;
+#	$sushw[$N]	= (" sushw				\\
+#		key=$$ref_sushw_key[$N]				\\
+#		a=$$ref_sushw_a[$N]				\\
+#		");
+#$N=0;
+
+#A2B
+$N=1;
+	$a2b[$N] 	= (" a2b				\\
+			n1=$$ref_a2b_flts_per_line[$N]		\\
+		");
+$N=0;
+# SPECTRAL ANALYSIS  
+$N=1;
+	$sufft[$N] =  (" sufft	 	  			\\
+     ");
+$N=0;
+
+
+# MULTIPLE PANEL LOOP
+# DISPLAY DATA 
+# DISPLAY PARAMETERS 
+	for ($panel=$panel_first; $panel<=$panel_last; $panel = $panel + $panel_inc){	
+$N=1;
+$P=$panel;
+   		$suximage_x0[$N]		= 1000 * $sutaup_pmin ;	
+   		$suximage_dx[$N]		= 1000 * ($sutaup_pmax - $sutaup_pmin)/($sutaup_np-1);
+		$suximage_windowtitle[$N]	= '\('.$N.'\)\ '.'Amplitude\ spectrum\ '.$date.'\ panel\(s\)\ '.$panel.'\ of\ '.$panel_last;
+	        $suximage_title[$N]    		= 'S14\ Hz\ wagc=\ '.$$ref_sugain_note[1];
+		$suximage_xlabel[$N]    	= 'p\ s\/km';
+		$suximage_tlabel[$N]  		= 'frequency\ \(Hz\)';
+		$suximage_box_width[$N] 	= 700;				
+		$suximage_box_height[$N] 	= 300;				
+		$suximage_X0[$N]        	= 0 + ($P-1) * 25;
+		$suximage_Y0[$N]        	= 0 + ($P-1) * 25;
+		$suximage_orientation[$N]	= 'seismic';
+		$suximage_orientation[$N]	= 'seismic';
+		$suximage_orientation[$N]	= 'normal';
+		$suximage_hiclip[$N]            = 15000; 
+		$suximage_hiclip[$N]            = 5000; 
+		$suximage_hiclip[$N]            = 10000; 
+		$suximage_hiclip[$N]            = 20000; 
+		$suximage_hiclip[$N]            = 30000; 
+		$suximage_pick_file[$N]		= 'tau_p_picks_'.$sufile_in[1];
+
+	$suximage[$P][$N] =  (" suximage			\\
+		title=$suximage_title[$N]			\\
+		label1=$suximage_tlabel[$N]			\\
+		label2=$suximage_xlabel[$N]			\\
+		cmap=hsv8					\\
+		legend=1					\\
+		d2=$suximage_dx[$N]				\\
+		f2=$suximage_x0[$N]				\\
+		style=$suximage_orientation[$N]			\\
+		xbox=$suximage_X0[$N]				\\
+		ybox=$suximage_Y0[$N]				\\
+		windowtitle=$suximage_windowtitle[$N]		\\
+		wbox=$suximage_box_width[$N] 			\\
+		hbox=$suximage_box_height[$N]			\\
+		bclip=$suximage_hiclip[$N]                      \\
+		");
+$N=0;
+
+# DISPLAY DATA
+# DISPLAY PARAMETERS 
+$N=2;
+   		$suximage_x0[$N]		= 1000 * $sutaup_pmin ;	
+   		$suximage_dx[$N]		= 1000 * ($sutaup_pmax- $sutaup_pmin)/($sutaup_np-1); 		
+		$suximage_y0[$N]		= 0 ;	
+		$suximage_dy[$N]		= $d1[1]; 
+#print("pmax=$sutaup_pmax pmin=$sutaup_pmin np=$sutaup_np\n\n");
+   		$suximage_xlabel[$N]		= 'p\ s\/km'; 
+   		$suximage_ylabel[$N]		= 'Intercept\ time\ sec';
+		$suximage_windowtitle[$N]	= '\('.$N.'\)\ '.'\ p-tau\ '. $sufile_in[1].'\ '.$date.'\ panel\(s\)\ '.$panel.'\ of\ '.$panel_last;
+	        $suximage_title[$N]    		= 'p-tau';
+		$suximage_X0[$N]        	= 1100 + ($P-1) * 25;
+		$suximage_Y0[$N]        	= 0 + ($P-1) * 25;
+		$suximage_box_width[$N] 	= 350;		
+		$suximage_box_height[$N] 	= 700;
+		$suximage_orientation[$N]	= 'seismic';
+		$suximage_pick_file[$N]		= 'tau_p_picks_'.$sufile_in[1];
+		$suximage_grey_scale[$N] 	= 'hsv0';
+
+	$suximage[$P][$N] =  (" suximage			\\
+		windowtitle=$suximage_windowtitle[$N]		\\
+		title=$suximage_title[$N]			\\
+		wbox=$suximage_box_width[$N]			\\
+      		hbox=$suximage_box_height[$N] 			\\
+		xbox=$suximage_X0[$N]				\\
+		ybox=$suximage_Y0[$N]				\\
+		d2=$suximage_dx[$N]				\\
+		f2=$suximage_x0[$N]				\\
+		label2=$suximage_xlabel[$N]			\\
+		clip=3          				\\
+		cmap=$suximage_grey_scale[$N]			\\
+		legend=1					\\
+		label1=$suximage_ylabel[$N]			\\
+		style=$suximage_orientation[$N]			\\
+		clip=100					\\
+		perc=99 					\\
+		");
+		#mpicks=$suximage_pick_file[$N]			\\
+
+$N=0;	
+
+
+# DISPLAY DATA 
+# DISPLAY PARAMETERS 
+# (flipped fast (1) direction is still vertical, under 'seismic' style)
+$N=3;
+   		$suximage_x0[$N]		= 1000 * $sutaup_pmin ;	
+   		$suximage_dx[$N]		= 1000 * ($sutaup_pmax- $sutaup_pmin )/($sutaup_np-1);
+		$suximage_windowtitle[$N]	= '\('.$N.'\)\ '.'Normalized\ Amp\ spec\ '.$date.'\ panel\(s\)\ '.$panel.'\ of\ '.$panel_last;
+	        $suximage_title[$N]    		= 'Hz\ '.'\ '.$$ref_sugain_note[1].'\ \ '.$$ref_smooth2_r1[1].'-point\ smooth'.$$ref_suinterp_note[1];
+		$suximage_ylabel[$N]  		= 'frequency\ \(Hz\)';
+		$suximage_xlabel[$N]    	= 'p\ s\/km';
+		$suximage_box_width[$N] 	= 700;				# default is 550
+		$suximage_box_height[$N] 	= 300;				# default is 550
+		$suximage_X0[$N]        	= 0 + ($P-1) * 25;
+		$suximage_Y0[$N]        	= 350 + ($P-1) * 25;
+		$suximage_orientation[$N]	= 'seismic';
+		$suximage_orientation[$N]	= 'normal';
+		$suximage_hiclip[$N]		= 5;
+		$suximage_hiclip[$N]		= 4;
+		$suximage_pick_file[$N]		= 'fp_picks_'.$sufile_in[1];
+		$suximage_dy[$N]		= $d1;
+  		$suximage_y0[$N]		= 0;
+
+	$suximage[$P][$N] =  (" suximage			\\
+		title=$suximage_title[$N]			\\
+		label1=$suximage_ylabel[$N]			\\
+		label2=$suximage_xlabel[$N]			\\
+		cmap=hsv8					\\
+		legend=1					\\
+		f1=$suximage_y0[$N]				\\
+		d1=$suximage_dy[$N]				\\
+		f2=$suximage_x0[$N]				\\
+		d2=$suximage_dx[$N]				\\
+		style=$suximage_orientation[$N]			\\
+		xbox=$suximage_X0[$N]				\\
+		ybox=$suximage_Y0[$N]				\\
+		windowtitle=$suximage_windowtitle[$N]		\\
+		wbox=$suximage_box_width[$N] 			\\
+		hbox=$suximage_box_height[$N]			\\
+		bclip=$suximage_hiclip[$N]			\\
+		mpicks=$suximage_pick_file[$N]			\\
+		");
+$N=0;
+
+# DISPLAY DATA 
+# DISPLAY PARAMETERS 
+# (flipped fast (1) direction is still vertical, under 'seismic' style)
+$N=4;
+   		$suximage_x0[$N]		= 1000 * $sutaup_pmin ;	
+   		$suximage_dx[$N]		= 1000 * ($sutaup_pmax- $sutaup_pmin )/($sutaup_np-1);
+		$suximage_dy[$N]		= $d1;
+  		$suximage_y0[$N]		= 0;
+		$suximage_windowtitle[$N]	= '\('.$N.'\)\ '.'Sum\ of\ Amp\ spec\ '.$date.'\ panel\(s\)\ '.$panel_first.'\ to\ '.$panel_last.'\ every\ '.$panel_inc;
+	        $suximage_title[$N]    		= 'file\ '.$sufile_in[1].'\ '.$$ref_suinterp_note[1].'\ '.$$ref_suwind_note[$P];
+		$suximage_ylabel[$N]  		= 'frequency\ \(Hz\)';
+		$suximage_xlabel[$N]    	= 'p\ s\/km';
+		$suximage_box_width[$N] 	= 700;				# default is 550
+		$suximage_box_height[$N] 	= 300;				# default is 550
+		$suximage_X0[$N]        	= 0 + ($P-1) * 25;
+		$suximage_Y0[$N]        	= 700 + ($P-1) * 25;
+		$suximage_orientation[$N]	= 'seismic';
+		$suximage_orientation[$N]	= 'normal';
+		$suximage_lowclip[$N]		= 0;
+		$suximage_hiclip[$N]		= 10;
+#		$suximage_pick_file[$N]		= 'f_p_picks_'.$sufile_in[1];
+
+	$suximage[$P][$N] =  (" suximage			\\
+		title=$suximage_title[$N]			\\
+		label1=$suximage_ylabel[$N]			\\
+		label2=$suximage_xlabel[$N]			\\
+		cmap=hsv8					\\
+		legend=1					\\
+		f1=$suximage_y0[$N]				\\
+		d1=$suximage_dy[$N]				\\
+		f2=$suximage_x0[$N]				\\
+		d2=$suximage_dx[$N]				\\
+		style=$suximage_orientation[$N]			\\
+		xbox=$suximage_X0[$N]				\\
+		ybox=$suximage_Y0[$N]				\\
+		windowtitle=$suximage_windowtitle[$N]		\\
+		wbox=$suximage_box_width[$N] 			\\
+		hbox=$suximage_box_height[$N]			\\
+		bclip=$suximage_hiclip[$N]			\\
+		wclip=$suximage_lowclip[$N]			\\
+		");
+		#mpicks=$suximage_pick_file[$N]			\\
+$N=0;
+# DISPLAY DATA 
+# DISPLAY PARAMETERS 
+# (flipped fast (1) direction is still vertical, under 'seismic' style)
+$N=5;
+   		$suximage_x0[$N]		= 1000 * $sutaup_pmin ;	
+   		$suximage_dx[$N]		= 1000 * ($sutaup_pmax- $sutaup_pmin )/($sutaup_np-1);
+		$suximage_windowtitle[$N]	= '\('.$N.'\)\ '.'Amp\ spec\ w\ AGC\ '.$date.'\ panel\(s\)\ '.$panel.'\ of\ '.$panel_last;
+	        $suximage_title[$N]    		= 'S14\ Hz\ wagc=\ '.$$ref_sugain_wagc[2].'\ fftwagc='.$$ref_sugain_wagc[3];
+		$suximage_ylabel[$N]  		= 'frequency\ \(Hz\)';
+		$suximage_xlabel[$N]    	= 'p\ s\/km';
+		$suximage_box_width[$N] 	= 700;				# default is 550
+		$suximage_box_height[$N] 	= 300;				# default is 550
+		$suximage_X0[$N]        	= 0 + ($P-1) * 25;
+		$suximage_Y0[$N]        	= 500 + ($P-1) * 25;
+		$suximage_orientation[$N]	= 'seismic';
+		$suximage_orientation[$N]	= 'normal';
+		$suximage_pick_file[$N]		= 'tau_p_picks_'.$sufile_in[1];
+		$suximage_dy[$N]		= $d1;
+  		$suximage_y0[$N]		= 0;
+
+	$suximage[$P][$N] =  (" suximage			\\
+		title=$suximage_title[$N]			\\
+		label1=$suximage_ylabel[$N]			\\
+		label2=$suximage_xlabel[$N]			\\
+		cmap=hsv8					\\
+		legend=1					\\
+		f1=$suximage_y0[$N]				\\
+		d1=$suximage_dy[$N]				\\
+		f2=$suximage_x0[$N]				\\
+		d2=$suximage_dx[$N]				\\
+		style=$suximage_orientation[$N]			\\
+		xbox=$suximage_X0[$N]				\\
+		ybox=$suximage_Y0[$N]				\\
+		windowtitle=$suximage_windowtitle[$N]		\\
+		wbox=$suximage_box_width[$N] 			\\
+		hbox=$suximage_box_height[$N]			\\
+		mpicks=$suximage_pick_file[$N]			\\
+		");
+$N=0;
+
+# DISPLAY DATA 
+# DISPLAY PARAMETERS 
+$N=1;
+		$suxwigb_windowtitle[$N]	= '\('.$N.'\)\ '.'S\ 14\ Hz\ '.$date.'\ panel\(s\)\ '.$panel.'\ of\ '.$panel_last;
+		$suxwigb_title[$N]		= $$ref_suinterp_note[1].'\ '.$$ref_sugain_note[1]; 
+		$suxwigb_box_width[$N] 		= 350;
+		$suxwigb_tlabel[$N]    		= 'TWTT\ \(s\)';
+		$suxwigb_xlabel[$N]    		= 'trace\ no.';
+		$suxwigb_X0[$N]        		=  1500 + ($P-1) * 25;
+		$suxwigb_Y0[$N]			=  0 + ($P-1) * 25;
+		$suxwigb_key[$N]		= 'tracf';
+
+	$suxwigb[$P][$N] =  (" suxwigb				\\
+		key=$suxwigb_key[$N]				\\
+		title=$suxwigb_title[$N]			\\
+		windowtitle=$suxwigb_windowtitle[$N]		\\
+		wbox=$suxwigb_box_width[$N]			\\
+		label1=$suxwigb_tlabel[$N]			\\
+		label2=$suxwigb_xlabel[$N]			\\
+		xbox=$suxwigb_X0[$N]				\\
+		ybox=$suxwigb_Y0[$N]				\\
+         	wbox=$suxwigb_box_width[$N]			\\
+		va=1						\\
+		xcur=2						\\
+		clip=5						\\
+		");
+$N=0;
+}
+
+#  DEFINE FLOW(S)
+ for ($panel=$panel_first,$num_panels=1; $panel<=$panel_last ;$panel = $panel + $panel_inc,$num_panels++){	
+   $P=$panel;
+
+   if ($interpolation == $on) {
+	$flow[$P][1] = (" 					\\
+		$suwind[$P]					\\
+      		<$inbound[1] | 					\\
+		$suinterp[1] |					\\
+		$sugain[1]   | 					\\
+		$suxwigb[$P][1]					\\
+		&						\\
+		");  	
+
+#  DEFINE FLOW(S)
+	$flow[$P][2] = (" 					\\
+		$suwind[$P]					\\
+      		<$inbound[1] 	|				\\
+		$suinterp[1] |					\\
+		$sufilter[1]	|				\\
+		$sugain[1]	|				\\
+		$sutaup[1]	|				\\
+		$sufft[1] 	|				\\
+		$suamp[$P] 	|				\\
+		$suximage[$P][1]				\\
+		&						\\
+		"); 
+		
+# DEFINE FLOW(S)
+	$flow[$P][3] = (" 					\\
+    		$suwind[$P]					\\
+		< $inbound[1]	|				\\
+		$suinterp[1] 	|				\\
+		$sufilter[1]	|				\\
+		$sugain[1]	|				\\
+		$sutaup[1]	|				\\
+		$suximage[$P][2]				\\
+	        &						\\
+		");
+		
+# DEFINE FLOW(S)
+# output panel
+	$flow[$P][4] = (" 					\\
+    		$suwind[$P]					\\
+		< $inbound[1]	|				\\
+		$suinterp[1] |					\\
+		$sufilter[1]	|				\\
+		$sugain[1]	|				\\
+		$sutaup[1]	|				\\
+		$sufft[1] 	|				\\
+		$suamp[$P] 	>				\\
+		$$ref_suamp_outbound[$P]			\\
+								\\
+		");
+	
+	# DEFINE FLOW(S)
+# output smoothed trace 
+	$flow[$P][5] = (" 					\\
+    		$suwind[$P]					\\
+		< $inbound[1]	|				\\
+		$suinterp[1] 	|				\\
+		$sufilter[1]	|				\\
+		$sugain[1]	|				\\
+		$sutaup[1]	|				\\
+		$sufft[1] 	|				\\
+		$suamp[$P] 	|				\\
+		$suflip[1]  	|				\\
+		$sumax[$P] ;					\\
+		$gawk[$P]   	|     				\\
+		$a2b[1]		|				\\
+		$smooth2[1]     |				\\
+		$suaddhead[1]	|				\\
+		$sushw[$P] 	> 				\\
+		$$ref_sushw_outbound[$P]			\\
+								\\
+		");
+		
+#  DEFINE FLOW(S)
+# plot
+# normalize f-p panel
+	$flow[$P][6] = (" 					\\
+		$supanel_div_by_trace[$P]			\\
+		$$ref_supanel_div_by_trace_PANEL[$P]		\\
+		$$ref_supanel_div_by_trace_TRACE[$P]  |		\\
+		$suximage[$P][3]				\\
+		&						\\
+		");  	
+
+#  DEFINE FLOW(S)
+# create normalized f-p panel
+#
+	$flow[$P][7] = (" 					\\
+		$supanel_div_by_trace[$P]			\\
+		$$ref_supanel_div_by_trace_PANEL[$P]		\\
+		$$ref_supanel_div_by_trace_TRACE[$P]  		\\
+		> $fp_outbound[$P]				\\
+								\\
+		");  	
+
+# sum normalized f-p panels
+#   on the first panel
+   	if ($num_panels == 1)	{       	
+                print("first panel is: $suop2_outbound_m[1]\n");
+		$flow[$P][8] = (" cp $fp_outbound[$P]		\\
+				     $suop2_outbound_m[1]	\\
+								\\
+	        ");
+   	}
+
+   	if ($num_panels > 1) { 
+                print("num panels $num_panels\n");
+		$flow[$P][8] = (" 					\\
+			suop2						\\
+			$suop2_outbound_m[1]				\\
+			$fp_outbound[$P]				\\
+			op=sum						\\
+			> $suop2_outbound_n[1] ;			\\
+			cp $suop2_outbound_n[1]	$suop2_outbound_m[1]	\\
+									\\
+			"); 
+   	}
+
+   #end if
+   }
+   elsif ($interpolation == $off) {
+	$flow[$P][1] = (" 					\\
+		$suwind[$P]					\\
+      		<$inbound[1] | 					\\
+		$sugain[1]   | 					\\
+		$suxwigb[$P][1]					\\
+		&						\\
+		");  
+
+#  DEFINE FLOW(S)
+	$flow[$P][2] = (" 					\\
+		$suwind[$P]					\\
+      		<$inbound[1] 	|				\\
+		$sufilter[1]	|				\\
+		$sugain[1]	|				\\
+		$sutaup[1]	|				\\
+		$sufft[1] 	|				\\
+		$suamp[$P] 	|				\\
+		$suximage[$P][1]				\\
+		&						\\
+		"); 
+
+ #  DEFINE FLOW(S)
+	$flow[$P][2] = (" 					\\
+		$suwind[$P]					\\
+      		<$inbound[1] 	|				\\
+		$sufilter[1]	|				\\
+		$sugain[1]	|				\\
+		$sutaup[1]	|				\\
+		$sufft[1] 	|				\\
+		$suamp[$P] 	|				\\
+		$suximage[$P][1]				\\
+		&						\\
+		"); 
+
+# DEFINE FLOW(S)
+	$flow[$P][3] = (" 					\\
+    		$suwind[$P]					\\
+		< $inbound[1]	|				\\
+		$sufilter[1]	|				\\
+		$sugain[1]	|				\\
+		$sutaup[1]	|				\\
+		$suximage[$P][2]				\\
+	        &						\\
+		");
+		
+# DEFINE FLOW(S)
+# output panel
+	$flow[$P][4] = (" 					\\
+    		$suwind[$P]					\\
+		< $inbound[1]	|				\\
+		$sufilter[1]	|				\\
+		$sugain[1]	|				\\
+		$sutaup[1]	|				\\
+		$sufft[1] 	|				\\
+		$suamp[$P] 	>				\\
+		$$ref_suamp_outbound[$P]			\\
+								\\
+		");
+	
+	# DEFINE FLOW(S)
+# output smoothed trace 
+	$flow[$P][5] = (" 					\\
+    		$suwind[$P]					\\
+		< $inbound[1]	|				\\
+		$sufilter[1]	|				\\
+		$sugain[1]	|				\\
+		$sutaup[1]	|				\\
+		$sufft[1] 	|				\\
+		$suamp[$P] 	|				\\
+		$suflip[1]  	|				\\
+		$sumax[$P] ;					\\
+		$gawk[$P]   	|     				\\
+		$a2b[1]		|				\\
+		$smooth2[1]     |				\\
+		$suaddhead[1]	|				\\
+		$sushw[$P] 	> 				\\
+		$$ref_sushw_outbound[$P]			\\
+								\\
+		");
+		
+#  DEFINE FLOW(S)
+# plot
+# normalize f-p panel
+	$flow[$P][6] = (" 					\\
+		$supanel_div_by_trace[$P]			\\
+		$$ref_supanel_div_by_trace_PANEL[$P]		\\
+		$$ref_supanel_div_by_trace_TRACE[$P]  |		\\
+		$suximage[$P][3]				\\
+		&						\\
+		");  	
+
+#  DEFINE FLOW(S)
+# output normalized f-p panel
+	$flow[$P][7] = (" 					\\
+		$supanel_div_by_trace[$P]			\\
+		$$ref_supanel_div_by_trace_PANEL[$P]		\\
+		$$ref_supanel_div_by_trace_TRACE[$P] > 		\\
+		$fp_outbound[$P]				\\
+								\\
+		"); 
+
+# sum normalized f-p panels
+#   on the first panel
+   	if ($num_panels == 1)	{       	
+                print("first panel is: $suop2_outbound_m[1]\n");
+		$flow[$P][8] = (" cp $fp_outbound[$P]		\\
+				     $suop2_outbound_m[1]	\\
+								\\
+	        ");
+   	}
+
+   	if ($num_panels > 1) { 
+                print("num panels $num_panels\n");
+		$flow[$P][8] = (" 					\\
+			suop2						\\
+			$suop2_outbound_m[1]				\\
+			$fp_outbound[$P]				\\
+			op=sum						\\
+			> $suop2_outbound_n[1] ;			\\
+			cp $suop2_outbound_n[1]	$suop2_outbound_m[1]	\\
+									\\
+			"); 
+   	}
+
+# end elseIF
+  }
+
+# end for
+} 
+
+# DEFINE FLOW
+# outside loop
+# plot final sum of normalized        	
+# f-p panels
+	$flow[$P][9] = (" 					\\
+		$suximage[$P][4]			\\
+		< $suop2_outbound_m[1] 				\\
+		&						\\
+		");
+
+
+# RUN FLOW(S)
+ for ($panel=$panel_first; $panel<=$panel_last; $panel = $panel + $panel_inc){	
+       $P=$panel;
+
+       system $flow[$P][1]; 
+	system 'echo', $flow[$P][1];	
+
+#outputs f-p without normalization
+#       system $flow[$P][2]; 
+#       system 'echo', $flow[$P][2];	
+
+        system $flow[$P][3]; 
+#       system 'echo', $flow[$P][3];	
+
+        system $flow[$P][4]; 
+#      system 'echo', $flow[$P][4];	
+
+        system $flow[$P][5]; 
+#      system 'echo', $flow[$P][5];	
+        system $flow[$P][6]; 
+#      system 'echo', $flow[$P][6];	
+
+# outputs f-p data sets 
+ 	system $flow[$P][7]; 
+#	system 'echo', $flow[$P][7];	
+
+# sums f-p data sets 
+ 	system $flow[$P][8]; 
+# 	system 'echo', $flow[$P][8];	
+
+ }
+
+# RUN FLOW(S)
+# plots final sum f-p data sets 	
+
+ 	system $flow[$P][9]; 
+# 	system 'echo', $flow[$P][9];	

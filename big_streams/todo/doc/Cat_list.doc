@@ -1,0 +1,71 @@
+CAT_LIST(1)           User Contributed Perl Documentation          CAT_LIST(1)
+
+
+
+DDOOCCUUMMEENNTTAATTIIOONN
+   SSYYNNOOPPSSIISS
+         PROGRAM NAME: Select_list.pl
+         AUTHOR: Juan Lorenzo
+         DATE: Sept 17 2012
+         DESCRIPTION
+         Version 1
+
+         A database is interrogated
+         Those files with the appropriate value
+         are written to a file in a temp directory.
+
+         The database has the following values
+                          id    INTEGER PRIMARY KEY,
+                          PROJECT_HOME         TEXT,
+                          site                 TEXT,
+                          monitoring_well      TEXT,
+                          preparation_well     TEXT,
+                          stage                TEXT,
+                          process              TEXT,
+                          filename             TEXT,
+                          start_time           REAL,
+                          rms                  REAL)
+
+       _S_t_e_p_s _a_r_e _a_s _f_o_l_l_o_w_s_:
+
+         1. Use packages:
+
+            (for subroutines)
+            manage_files_by
+            System_Variables (for subroutines)
+
+            (for variable definitions)
+            Sqlite (sqlite3 database)
+            SeismicUnix (Seismic Unix modules)
+
+            Use classes:
+            cat
+            flow
+            message
+            Sqlite
+
+         2. Instantiate classes
+
+         3. Declare local variables
+
+         4. Declare database file names
+
+         5. File list criterion is to select files whose rms lies between
+            the following values:
+
+         6. Get file names
+            Set database file nnd table names
+            Set keys to read and their ranges
+
+         7. Concatenate an array of files
+
+         Standard:
+         1. DEFINE FLOW(S)
+
+         2. RUN FLOW(S)
+
+         3. LOG FLOW(S)TO SCREEN AND FILE
+
+
+
+perl v5.10.1                      2012-10-14                       CAT_LIST(1)

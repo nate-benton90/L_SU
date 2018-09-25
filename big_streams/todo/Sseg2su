@@ -1,0 +1,198 @@
+#! /usr/bin/perl  -w
+
+=head1 DOCUMENTATION
+
+=head2 SYNOPSIS
+
+
+ PROGRAM NAME:  Sseg2su
+ AUTHOR:  Juan Lorenzo
+
+=head2 CHANGES and their DATES
+
+ DATE:    Aug 9, 2011
+ Version  1.1 July 29 2016
+          Introduced pure textual configuration files
+
+=head2 DESCRIPTION
+
+ File format conversiuon
+ Data format change from Seg2 ("DAT")
+ or geometrics format to su
+
+=head2 REQUIRES 
+
+ sioseis  
+ lcoal configuration file called Sseg2su_config
+
+=head2 Examples
+
+For example, total number of files =74  first file is "1000.su"
+
+=head2 STEPS
+
+ 1.  use the local library of the user
+ 1.1 bring is user variables from a local file
+ 2.  create instances of the needed subroutines
+
+=head2 NOTES 
+
+ We are using Moose.
+ Moose already declares that you need debuggers turned on
+ so you don't need a line like the following:
+ use warnings;
+ 
+ USES the following classes:
+ ireadfiles
+  and packages of subroutines
+ System_Variables
+ SeismicUnix
+
+# Use shell transparently to locate home directory before compilation
+
+        my $library_location;
+
+        BEGIN {
+                use Shell qw(echo);
+
+                $home_directory = ` echo \$HOME`;
+                chomp $home_directory;
+                $library_location = $home_directory.'/lsu/libAll';
+        }
+
+  use lib $library_location;
+
+=cut
+
+  use Moose;
+   use Project;
+  my $Project = new Project();
+  use readfiles; 
+  my ($DATA_SEISMIC_SU) 	= $Project->DATA_SEISMIC_SU();
+  my ($DATA_SEISMIC_SEG2) 	= $Project->DATA_SEISMIC_SEG2();
+ 
+=head2 Instantiate classes:
+
+ Create a new version of the package 
+ with a unique name
+
+=cut
+ 
+  my $read             = new readfiles();
+
+
+  my ($err,$CFG) 	= $read -> cfg("/usr/local/pl/Sseg2su_config.pl");
+
+  my $number_of_files 	= $CFG->{seg2su}{1}{number_of_files};
+  my $first_file_number = $CFG->{seg2su}{1}{first_file_number};
+
+print("values are $number_of_files,$first_file_number\n\n");
+=head2 Check configuration file for errors
+
+
+=cut
+
+if ( $err) {
+     print(STDERR $err, "\n");
+         exit(1);
+         }
+
+=head2 Declare variables 
+
+    in local memory space
+
+=cut
+
+my ($i,$j,$j_char);
+my (@file_name,@cp_dat2DAT,@segyclean);
+my (@sioseis,@flow);
+
+
+for ($i=1,$j=$first_file_number; $i <=$number_of_files; $i += 1,$j +=1){
+	$j_char 		= sprintf("%u",$j);
+	$file_name[$i]		= $j_char;
+    }
+
+#START FOR LOOP
+#
+for ($i=1; $i<=$number_of_files; $i++) {
+
+=pod
+
+Convert *dat file names to DAT file names for
+conversion by sioseis
+
+=cut
+
+
+     $cp_dat2DAT[$i] = ("   cp $DATA_SEISMIC_SEG2/$file_name[$i].dat \\
+				$DATA_SEISMIC_SEG2/$file_name[$i].DAT\\
+			");
+
+=pod INPUT FILE NAMES
+
+convert seg2 files to su files
+
+=cut
+
+ $sioseis[$i] = ("  							\\
+	cd $DATA_SEISMIC_SEG2;						\\
+        echo `pwd`;							\\
+      sioseis << eof
+      procs seg2in diskoa end
+   	seg2in
+    		ffilen $file_name[$i] 	lfilen $file_name[$i]  end
+   	end
+   	diskoa
+   		opath $DATA_SEISMIC_SU/$file_name[$i].su
+		ofmt 1
+ 		format su end
+   	end
+      end 
+      eof								\\
+	");
+
+=pod Clean 
+
+su output
+
+=cut
+
+ $segyclean[$i] = (" segyclean					\\
+		<$DATA_SEISMIC_SU/$file_name[$i].su		\\
+		>$DATA_SEISMIC_SU/$file_name[$i]_clean.su	\\
+		");
+
+}
+
+# END FOR LOOP
+
+for ($i= 1 ; $i <= $number_of_files; $i += 1) {
+
+=pod
+
+DEFINE FLOW(S)
+
+=cut
+
+	  $flow[1][$i] =  	$cp_dat2DAT[$i];	
+          $flow[2][$i] =  	$sioseis[$i];
+          $flow[3][$i] =  	$segyclean[$i];
+
+=pod
+
+RUN FLOW(S)
+
+=cut
+	        
+       system $flow[1][$i]; 
+	system 'echo', $flow[1][$i];	
+
+       system $flow[2][$i]; 
+	system 'echo', $flow[2][$i];       
+
+	system $flow[3][$i]; 
+	system 'echo', $flow[3][$i];	
+
+}
+

@@ -1,0 +1,233 @@
+#! /usr/bin/perl  -w
+
+# SCRIPT NAME
+# iSurf2_1
+# Purpose: Interactively pick frequency- p  parameters 
+# Juan M. Lorenzo
+# originally interactive Top Mute
+# April 2 2009 
+# V1 adapted from Top_Mute above
+# V2 implemented with new logic in August 2011
+# Sept. 22 2011
+# V2 changed location of local and system variable files
+# Jan 16 2012
+# V2_1 added summing options and removed option to see a gained version of fft
+
+
+# Use shell transparently to locate home directory before compilation
+
+        my $library_location;
+
+        BEGIN {
+                use Shell qw(echo);
+
+                $home_directory = ` echo \$HOME`;
+                chomp $home_directory;
+                $library_location = $home_directory.'/lsu/libAll';
+        }
+
+# LOAD GENERAL PERL LIBRARY
+  use lib $library_location;
+
+# use library 
+  use lib '/usr/local/pl/libAll';
+  use manage_files_by;
+
+# LOAD SEISMIC UNIX GLOBAL SYSTEM LIBARAY
+  use lib '/usr/local/pl/libAll';
+  use SeismicUnix qw ($true $false $isurf_par_ $isurf_check_pickfile_);
+  use Project;
+  my $Project = new Project();  
+  my ($DATA_SEISMIC_SU) 		= $Project->DATA_SEISMIC_SU();
+
+# use library
+  use lib './libAll';
+  use iSurf2_1 qw ($file_name);
+
+# sufile names
+  $sufile_in[1] 	= $file_name;
+
+# temporary
+  $plib			= '/usr/local/pl';
+
+# file name definitions
+# check to see if prior f-p picked pairs files exist for this project 
+  $check_if_isurf_picks_exist 	   = $DATA_SEISMIC_SU.'/'.$isurf_check_pickfile_.$sufile_in[1];
+
+  $check_if_isurf_par_exist         = $DATA_SEISMIC_SU.'/'.$isurf_par_.$sufile_in[1];
+	# Do old mute files exist that can be  applied? 
+	#default
+	$file_existence1 = $false;
+        ($file_existence1) = manage_files_by::does_file_exist(\$check_if_isurf_picks_exist);
+	
+	#default
+	$file_existence2 = $false;
+        ($file_existence2) = manage_files_by::does_file_exist(\$check_if_isurf_par_exist);
+
+	if(($file_existence1 eq $true) && ($file_existence2 eq $false) ) {
+		print ("f-p picked pairs should exist but can not be found\n\n");
+		print ("resetting the existence file\n\n");
+		manage_files_by::write_one(\$check_if_isurf_picks_exist);
+	}
+
+	#default
+	$file_empty = $true;
+	if($file_existence2) {
+          ($file_empty)    = manage_files_by::is_file_empty(\$check_if_isurf_par_exist);
+	}
+
+	if (($file_existence1 eq $true) && ($file_empty eq $false)) {
+#		# test if file has one
+		($ans) = manage_files_by::is_one(\$check_if_isurf_picks_exist);
+
+	 	if ($ans eq $true) {
+                	# apply old f-p picks 
+                	print ("Old f-p picks exist. Checked in: $check_if_isurf_picks_exist\n\n");
+                	print ("Applying old f-p picks ...\n\n");
+                	system (" perl $plib/iSuDisp2_1"); 
+
+			my ($response) = 'n';
+			while ($response eq 'n') {
+			  	system ("perl $plib/iPickSuDisp2_1");
+				system ("perl $plib/iSurfPicks2par2_1");
+                		system ("perl $plib/itemp_PickSuDisp2_1"); 
+			  	print ("Select new f-p picks \n\n") ;		
+			  	print ("Are 1-OLD picks OK y/n or q-quit?\n");
+		  	        $response = <>;
+			  	chomp($response);
+
+				# option to bail if you're satisfied with the existing older picks
+				#if ($response eq 'n') {
+				#}
+			}
+			if ($response eq 'y'){
+				manage_files_by::write_one(\$check_if_isurf_picks_exist);
+				system ("perl $plib/iSurfPicks2par2_1");
+				system ("perl $plib/iSave_surf_picks2_1");
+				#system ("perl $plib/iApply_Top_Mute");
+				#print ("response is $response\n");
+			}
+               		elsif ($response eq 'q') {
+                		#print ("response is $response\n");
+                		die  ("program ending 1\n");
+			}
+
+	}
+		elsif ($ans eq $false) {
+			# write 0 to file
+			manage_files_by::write_zero(\$check_if_isurf_picks_exist);
+			# select f-p picked pairs
+			# Run flow(s)
+			my ($response) = 'n';
+			print ("Old f-p pairs do not exist\n\n") ;		
+			while ($response eq 'n') {
+		  		print ("Select new f-p pairs (points) \n\n");
+		  		system ("perl $plib/iPickSuDisp2_1");
+				system ("perl $plib/iSurfPicks2par2_1");
+                		system (" perl $plib/itemp_PickSuDisp2_1"); 
+		  		print ("Are picks OK? y/n or q-quit?\n");
+		  		$response = <>;
+		  		chomp($response);
+			}
+			if ($response eq 'y'){
+				system ("perl $plib/iSurfPicks2par2_1");
+				system ("perl $plib/iSave_surf_picks2_1");
+				#system ("perl $plib/iApply_Top_Mute");
+				# write 1 to file
+				manage_files_by::write_one(\$check_if_isurf_picks_exist);
+				#print ("response is $response\n");
+			}
+                	elsif ($response eq 'q') {
+                		#print ("response is $response\n");
+                		die  ("program ending 2\n");
+			}
+		}
+	}
+        elsif (($file_existence2 eq $false) && ($file_empty eq $true)) {
+		# write 0 to file
+		manage_files_by::write_zero(\$check_if_isurf_picks_exist);
+		my ($response) = 'n';
+		while ($response eq 'n') {
+		  	print ("Select new f-p pairs \n\n") ;		
+		  	system ("perl $plib/iPickSuDisp2_1");
+			system ("perl $plib/iSurfPicks2par2_1");
+                	system (" perl $plib/itemp_PickSuDisp2_1"); 
+		  	print ("Are picks OK y/n or q-quit?\n");
+		  	$response = <>;
+		  	chomp($response);
+		}
+		if ($response eq 'y'){
+			system ("perl $plib/iSurfPicks2par2_1");
+			system ("perl $plib/iSave_surf_picks2_1");
+			#system ("perl $plib/iApply_Top_Mute");
+			# write 1 to file
+			manage_files_by::write_one(\$check_if_isurf_picks_exist);
+			#print ("response is $response\n");
+		}
+		elsif ($response eq 'q') {
+			#print ("response is $response\n");
+			die  ("program ending 3\n");
+		}
+        }	
+        elsif (($file_existence1 eq $true) && ($file_empty eq $false)){
+		print("Old parameters exist -- not implemented yet\n\n");
+        }
+        elsif (($file_existence1 eq $true) && ($file_empty eq $true)){
+			# write 0 to file
+			manage_files_by::write_zero(\$check_if_isurf_picks_exist);
+			# select f-p picked pairs
+			my ($response) = 'n';
+			print ("Old f-p pairs MAY NOT exist\n\n") ;		
+			while ($response eq 'n') {
+		  		print ("Select new f-p pairs \n\n") ;		
+		  		system ("perl $plib/iPickSuDisp2_1");
+				system ("perl $plib/iSurfPicks2par2_1");
+	               		system (" perl $plib/itemp_PickSuDisp2_1"); 
+		  		print ("Are picks OK y/n or q-quit?\n");
+		  		$response = <>;
+		  		chomp($response);
+			}
+			if ($response eq 'y'){
+				system ("perl $plib/iSurfPicks2par2_1");
+				system ("perl $plib/iSave_surf_picks2_1");
+				#system ("perl $plib/iApply_Top_Mute");
+				# write 1 to file
+				manage_files_by::write_one(\$check_if_isurf_picks_exist);
+				#print ("response is $response\n");
+			}
+                	elsif ($response eq 'q') {
+                		#print ("response is $response\n");
+                		die  ("program ending 4\n");
+			}
+        }
+
+	elsif (($file_existence1 eq $false) && ($file_empty eq $false)){
+		print("Old files do not exist\n");	
+		# write 0 to file
+		manage_files_by::write_zero(\$check_if_isurf_picks_exist);
+		my ($response) = 'n';
+		while ($response eq 'n') {
+		  	print ("Select new f-p pairs \n\n") ;		
+		  	system ("perl $plib/iPickSuDisp2_1");
+			system ("perl $plib/iSurfPicks2par2_1");
+                	system (" perl $plib/itemp_PickSuDisp2_1"); 
+		  	print ("Are picks OK y/n or q-quit?\n");
+		  	$response = <>;
+		  	chomp($response);
+		}
+		if ($response eq 'y'){
+			system ("perl $plib/iSurfPicks2par2_1");
+			system ("perl $plib/iSave_surf_picks2_1");
+			#system ("perl $plib/iApply_Top_Mute");
+			# write 1 to file
+			manage_files_by::write_one(\$check_if_isurf_picks_exist);
+			#print ("response is $response\n");
+		}
+		elsif ($response eq 'q') {
+			#print ("response is $response\n");
+			die  ("program ending 5\n");
+		}
+
+
+		print("Ending\n\n");
+	}

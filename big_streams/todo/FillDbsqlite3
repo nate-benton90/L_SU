@@ -1,0 +1,161 @@
+#! perl -w
+
+=pod
+
+=head1 DOCUMENTATION
+
+=head2 SYNOPSIS 
+
+ PROGRAM NAME: createDBsqlite3.pl
+ AUTHOR: Juan Lorenzo
+ DATE: May 11 2012
+ DESCRIPTION
+ Version 1
+ A new database is created or an pre-existing database
+ has new entries added as follows:
+		   id    INTEGER PRIMARY KEY,
+	           PROJECT_HOME		TEXT,
+		   site 		TEXT,
+		   monitoring_well	TEXT,
+                   preparation_well	TEXT,
+		   stage		TEXT,
+		   process		TEXT,
+		   filename             TEXT,
+		   start_time           TEXT,
+		   rms	                TEXT)
+
+=cut
+
+ use DBI;
+ use warnings;
+ use strict;
+
+# Import special system definitions
+ use lib '/usr/local/pl/libAll';
+# Bring in definitions for SeismicUnix
+ use SeismicUnix qw ($suffix_segy $suffix_su);
+ use Project;
+ my $Project = new Project();
+ use manage_files_by;
+# use Sqlite3;
+
+# Bring in definitions for Sqlite
+ use Sqlite qw ( $db );
+
+# Bring in directory definitions
+ my ($DATABASE_SEISMIC_SQLITE)  = $Project->DATABASE_SEISMIC_SQLITE();
+ my ($DATA_SEISMIC_SU)		= $Project->DATA_SEISMIC_SU();
+ my ($DATA_SEISMIC_SEGY)	= $Project->DATA_SEISMIC_SEGY();
+
+# Project Variables must be local
+ my ($PROJECT_HOME)		= Project_Variables::PROJECT_HOME();
+ my ($site)			= Project_Variables::date();
+ my ($monitoring_well)		= Project_Variables::line();
+ my ($preparation_well)	        = Project_Variables::component();
+ my ($stage)			= Project_Variables::stage();
+ my ($process)			= Project_Variables::process();
+
+# declare local arrays 
+ my $i;
+ my @lsc1;
+ my @files;
+ my @db_file_name;
+ my @length;
+ my $length_lsc1;
+
+# declare database handle (pointer to database)
+ my $dbh;
+ my @dbhlite_inbound;
+ my $file_existence1;
+ my $sth;
+
+# print("$PROJECT_HOME,$site,$monitoring_well,$preparation_well,$stage,$process\n\n");
+# declare database file names
+ $db_file_name[1]	      	= $db.'1';
+ $dbhlite_inbound[1]        	= $DATABASE_SEISMIC_SQLITE.'/'.$db_file_name[1];
+
+
+# GET a list of files to enter into database table
+# one file name per line
+  @lsc1   			= (`cd $DATA_SEISMIC_SU; ls -Cb1 `);
+  $length_lsc1 			= scalar(@lsc1);
+
+#trim empty empty characters at the end of the file name string
+  for ($i=0; $i<$length_lsc1; $i++) {
+  	$lsc1[$i] = manage_files_by::trime($lsc1[$i]);
+  }
+
+ print ("$length_lsc1 files will be added to the database\n");
+ print ("The first file has perl index 0\n");
+
+# DATABASE WORK #########################
+# establish database arguments for performing 
+# several tasks
+# such as opening and closing database files
+# or carrying out defined database functions
+ my @db_arguments = {RaiseError => 1, AutoCommit => 1};
+
+# Test to see if database exist -
+ ($file_existence1) = manage_files_by::does_file_exist(\$dbhlite_inbound[1]);
+
+# Write into a database only if it exists already
+ if ($file_existence1) {
+	print("database $db_file_name[1] exists \n\n");
+	print("Write to database: $dbhlite_inbound[1] \n\n");
+	$dbh = DBI->connect("dbi:SQLite:$dbhlite_inbound[1]", "", "",
+	$db_arguments[1]) or die "Couldn't connect to database: " . DBI->errstr;
+
+# set up placeholders once
+# prepare a statement for repeated application
+# statement handle/pointer
+# PREPARE QUERY
+ 	$sth =	$dbh->prepare("INSERT INTO segy	
+			 (id,
+			PROJECT_HOME,
+			site,
+			monitoring_well,
+			preparation_well,
+			stage,
+			process,
+			filename) 
+			VALUES (NULL,?,?,
+			?,?,?,?,?)
+	     			");	    
+
+	if ($dbh->err()) { die "$DBI::errstr\n"; }
+
+# enquire
+# repeat the process of adding filenames to the database
+
+ 	for ($i=0; $i< $length_lsc1; $i++) {
+    		$sth->execute($PROJECT_HOME,
+			$site,
+			$monitoring_well,
+			$preparation_well,
+			$stage,
+			$process,
+			$lsc1[$i]);
+	}
+
+# confirm operation
+# extract values from database
+# 	my $all = $dbh->selectall_arrayref("SELECT * FROM segy");
+#  	foreach my $row (@$all) {
+# 		my ($id,$a,$b,$c,$d,$e,$f,$g,$h,$i) = @$row;
+# 		print "\nid=$id,$a,$b,$c,$d,$e,$f,$g,$h,$i\n";
+#	}
+
+# what is the number of the last row that was inserted?
+	print ("LAST insert id: ",$dbh->func('last_insert_rowid'),"\n\n\n");
+
+# disconnect from sqlite 3 server
+    	$dbh->disconnect();
+
+
+ } 
+
+ else {
+        print("database $db_file_name[1] does not exist\n\n");
+        print("Create a database and table beforehand\n\n");
+ }
+

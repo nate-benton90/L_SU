@@ -1,0 +1,60 @@
+#! /usr/bin/perl
+
+# SCRIPT NAME
+# iSave_top_mute_picks.pl
+# Purpose: Save final Top Mute of Data 
+# Juan M. Lorenzo
+# May 5 2009 
+
+
+# Use shell transparently to locate home directory before compilation
+
+        my $library_location;
+
+        BEGIN {
+                use Shell qw(echo);
+
+                $home_directory = ` echo \$HOME`;
+                chomp $home_directory;
+                $library_location = $home_directory.'/lsu/libAll';
+        }
+
+# LOAD GENERAL PERL LIBRARY
+  use lib $library_location;
+
+# library path
+  use lib './libAll';
+
+# use library
+  use System_Variables2;
+
+# import system variables
+  my ($PL_SEISMIC)      = System_Variables2::PL_SEISMIC();
+
+# sufile names
+  $sufile_in[1] 	= 'P.all_geom';
+
+# COPY DATA
+# copy data
+        $data_in[1]	= '.itemp_mute_picks_sorted_par';
+        $data_out[1]	= 'bottom_mute_par';
+        $inbound[1]	= $PL_SEISMIC.'/'.$data_in[1].'_'.$sufile_in[1];
+        $outbound[1]	= $PL_SEISMIC.'/'.$data_out[1].'_'.$sufile_in[1];
+
+	@cp[1] =  (" cp							\\
+		$inbound[1]						\\
+		$outbound[1]						\\
+		");
+
+
+#  DEFINE FLOW(S)
+	@flow[1] = (" 							\\
+		@cp[1] 	 						\\
+		&							\\
+		"); 
+
+
+# RUN FLOW(S)
+       system @flow[1]; 
+#       system 'echo', @flow[1];	
+

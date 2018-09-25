@@ -1,0 +1,69 @@
+#! /usr/bin/perl
+
+# SCRIPT NAME
+# iSave_top_mute_picks.pl
+# Purpose: Originally to Save final Top Mute of Data 
+# Juan M. Lorenzo
+# May 5 2009 
+# V2. change top mute parameters to toptom mute parameters
+# Aug 12, 2011
+
+
+# Use shell transparently to locate home directory before compilation
+
+        my $library_location;
+
+        BEGIN {
+                use Shell qw(echo);
+
+                $home_directory = ` echo \$HOME`;
+                chomp $home_directory;
+                $library_location[1] = $home_directory.'/lsu/libAll';
+        }
+
+# LOAD USER GLOBAL SYSTEM PERL LIBRARY
+  use lib $library_location[1];
+
+# LOAD SEISMIC UNIX GLOBAL SYSTEM LIBARAY
+  use lib '/usr/local/pl/libAll';
+  use SeismicUnix qw ($itemp_top_mute_picks_sorted_par_ $itop_mute_par_);
+
+# library location
+  use lib './libAll';
+
+# use library
+# import system variables
+  use System_Variables2;
+  ($DATA_SEISMIC_SU)      = System_Variables2::DATA_SEISMIC_SU();
+
+# use library
+# import system variables
+  use iTop_Mute qw ($file_name);
+
+# sufile names
+    $sufile_in[1] 	= $file_name;
+
+# COPY DATA
+# copy data
+        $data_in[1]	= $itemp_top_mute_picks_sorted_par_;
+        $data_out[1]	= $itop_mute_par_;
+        $inbound[1]	= $DATA_SEISMIC_SU.'/'.$data_in[1].$sufile_in[1];
+        $outbound[1]	= $DATA_SEISMIC_SU.'/'.$data_out[1].$sufile_in[1];
+
+	$cp[1] =  (" cp							\\
+		$inbound[1]						\\
+		$outbound[1]						\\
+		");
+
+
+#  DEFINE FLOW(S)
+	$flow[1] = (" 							\\
+		$cp[1] 	 						\\
+		&							\\
+		"); 
+
+
+# RUN FLOW(S)
+       system $flow[1]; 
+#       system 'echo', $flow[1];	
+

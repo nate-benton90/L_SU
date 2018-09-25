@@ -1,0 +1,197 @@
+#! /usr/bin/perl  -w
+
+# SCRIPT NAME
+# iTopmute
+# Purpose: Interactively pick muting parameters 
+# Juan M. Lorenzo
+# April 2 2009 
+# V2 implemented with new logic in August 2011
+
+
+# Use shell transparently to locate home directory before compilation
+
+        my $library_location;
+
+        BEGIN {
+                use Shell qw(echo);
+
+                $home_directory = ` echo \$HOME`;
+                chomp $home_directory;
+  #              $library_location = $home_directory.'/lsu/libAll';
+        }
+
+# LOAD GENERAL PERL LIBRARY
+  #use lib $library_location;
+
+# use library 
+  #use lib '/usr/local/pl/libAll';
+  use manage_files_by;
+
+# LOAD SEISMIC UNIX GLOBAL SYSTEM LIBARAY
+  #use lib '/usr/local/pl/libAll';
+  use SeismicUnix qw ($true $false $itop_mute_par_ $itop_mute_check_pickfile_);
+
+# library path
+  #use lib './libAll';
+  
+# use library
+  use System_Variables2;  
+  my ($DATA_SEISMIC_SU) 		= System_Variables2::DATA_SEISMIC_SU();
+
+# use library
+  use iTop_Mute qw ($file_name);
+
+# sufile names
+  $sufile_in[1] 	= $file_name;
+
+
+# temporary
+  $plib  = '/usr/local/pl';
+
+# file name definitions
+# check to see if prior mute parameter files exist for this project 
+  $check_if_itop_mute_picks_exist 	= $DATA_SEISMIC_SU.'/'.$itop_mute_check_pickfile_.$sufile_in[1];
+
+  $check_if_itop_mute_par_exist         = $DATA_SEISMIC_SU.'/'.$itop_mute_par_.$sufile_in[1];
+	# Do old mute files exist that can be  applied? 
+	#default
+	$file_existence1 = $false;
+        ($file_existence1) = manage_files_by::does_file_exist(\$check_if_itop_mute_picks_exist);
+	
+	#default
+	$file_existence2 = $false;
+        ($file_existence2) = manage_files_by::does_file_exist(\$check_if_itop_mute_par_exist);
+
+	if(($file_existence1 eq $true) && ($file_existence2 eq $false) ) {
+		print ("mute parameters should exist but can not be found\n\n");
+		print ("resetting the existence file\n\n");
+		manage_files_by::write_one(\$check_if_itop_mute_picks_exist);
+	}
+
+	#default
+	$file_empty = $true;
+	if($file_existence2) {
+          ($file_empty)    = manage_files_by::is_file_empty(\$check_if_itop_mute_par_exist);
+	}
+
+	if (($file_existence1 eq $true) && ($file_empty eq $false)) {
+#		# test if file has one
+		($ans) = manage_files_by::is_one(\$check_if_itop_mute_picks_exist);
+
+	 	if ($ans eq $true) {
+                	# apply old mute parameters
+                	print ("Old top mute parameters exist. Checked in: $check_if_itop_mute_picks_exist\n\n");
+                	print ("Applying old top mute parameters ...\n\n");
+                	system (" perl $plib/iSumute_top"); 
+
+			my ($response) = 'n';
+			while ($response eq 'n') {
+			  	print ("Select new top mute parameters \n\n") ;		
+			  	system ("perl $plib/iSelect_tr_Sumute_top");
+				system ("perl $plib/iTopMutepicks2par");
+                		system (" perl $plib/itemp_Sumute_top"); 
+			  	print ("Are picks OK y/n or q-quit?\n");
+		  	$response = <>;
+			  	chomp($response);
+			}
+			if ($response eq 'y'){
+				manage_files_by::write_one(\$check_if_itop_mute_picks_exist);
+				system ("perl $plib/iTopMutepicks2par");
+				system ("perl $plib/iSave_top_mute_picks");
+				system ("perl $plib/iApply_Top_Mute");
+				print ("response is $response\n");
+			}
+               		elsif ($response eq 'q') {
+                		print ("response is $response\n");
+                		die  ("program ending 1\n");
+			}
+
+	}
+		elsif ($ans eq $false) {
+			# write 0 to file
+			manage_files_by::write_zero(\$check_if_itop_mute_picks_exist);
+			# select mute parameters
+			# Run flow(s)
+			my ($response) = 'n';
+			print ("Old top mute parameters do not exist\n\n") ;		
+			while ($response eq 'n') {
+		  		print ("Select new top mute parameters \n\n") ;		
+		  		system ("perl $plib/iSelect_tr_Sumute_top");
+				system ("perl $plib/iTopMutepicks2par");
+                		system (" perl $plib/itemp_Sumute_top"); 
+		  		print ("Are picks OK y/n or q-quit?\n");
+		  		$response = <>;
+		  		chomp($response);
+			}
+			if ($response eq 'y'){
+				system ("perl $plib/iTopMutepicks2par");
+				system ("perl $plib/iSave_top_mute_picks");
+				system ("perl $plib/iApply_Top_Mute");
+				# write 1 to file
+				manage_files_by::write_one(\$check_if_itop_mute_picks_exist);
+				print ("response is $response\n");
+			}
+                	elsif ($response eq 'q') {
+                		print ("response is $response\n");
+                		die  ("program ending 2\n");
+			}
+		}
+	}
+        elsif (($file_existence2 eq $false) && ($file_empty eq $true)) {
+		# write 0 to file
+		manage_files_by::write_zero(\$check_if_itop_mute_picks_exist);
+		my ($response) = 'n';
+		while ($response eq 'n') {
+		  	print ("Select new top mute parameters \n\n") ;		
+		  	system ("perl $plib//iSelect_tr_Sumute_top");
+			system ("perl $plib/iTopMutepicks2par");
+                	system (" perl $plib/itemp_Sumute_top"); 
+		  	print ("Are picks OK y/n or q-quit?\n");
+		  	$response = <>;
+		  	chomp($response);
+		}
+		if ($response eq 'y'){
+			system ("perl $plib/iTopMutepicks2par");
+			system ("perl $plib/iSave_top_mute_picks");
+			system ("perl $plib/iApply_Top_Mute");
+			# write 1 to file
+			manage_files_by::write_one(\$check_if_itop_mute_picks_exist);
+			print ("response is $response\n");
+		}
+		elsif ($response eq 'q') {
+			print ("response is $response\n");
+			die  ("program ending 3\n");
+		}
+        }	
+        elsif (($file_existence1 eq $true) && ($file_empty eq $false)){
+		print("Old parameters exist -- not implemented yet\n\n");
+        }
+        elsif (($file_existence1 eq $true) && ($file_empty eq $true)){
+			# write 0 to file
+			manage_files_by::write_zero(\$check_if_itop_mute_picks_exist);
+			# select mute parameters
+			my ($response) = 'n';
+			print ("Old top mute parameters MAY NOT exist\n\n") ;		
+			while ($response eq 'n') {
+		  		print ("Select new top mute parameters \n\n") ;		
+		  		system ("perl $plib/iSelect_tr_Sumute_top");
+				system ("perl $plib/iTopMutepicks2par");
+	               		system (" perl $plib/itemp_Sumute_top"); 
+		  		print ("Are picks OK y/n or q-quit?\n");
+		  		$response = <>;
+		  		chomp($response);
+			}
+			if ($response eq 'y'){
+				system ("perl $plib/iTopMutepicks2par");
+				system ("perl $plib/iSave_top_mute_picks");
+				system ("perl $plib/iApply_Top_Mute");
+				# write 1 to file
+				manage_files_by::write_one(\$check_if_itop_mute_picks_exist);
+				print ("response is $response\n");
+			}
+                	elsif ($response eq 'q') {
+                		print ("response is $response\n");
+                		die  ("program ending 4\n");
+			}
+        }
+		print("Ending\n\n");

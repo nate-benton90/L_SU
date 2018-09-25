@@ -1,0 +1,189 @@
+#! /usr/bin/perl -w
+
+=head1 DOCUMENTATION
+
+=head2 SYNOPSIS
+
+ PROGRAM NAME: SuLoadHeaders 
+ Purpose: add traces 
+  AUTHOR:  Juan M. Lorenzo
+  DEPENDS: Seismic Unix modules from CSM 
+  DATE:    V0.1
+           Nov. 7 2016 
+           Nov. 29 2016
+	   Includes acces to a simple configuration file
+           Simple file is called SuLoadHeaders.config
+           Access to simple file is via SuLoadHeaders_config.pl
+           SuLoadHeaders_config.pl uses Config::Simple (jdhedden)
+           as well as SeismicUnix and SystemVariables 
+           packages
+  DESCRIPTION:  
+
+=head2 USES
+
+=head2 EXAMPLES
+
+ SuLoadHeaders_config.pl
+
+  Builds a hash of the configuration parameters 
+
+=head2 NEEDS
+
+  ~libAll/SuLoadHeaders.config 
+ /usr/local/pl/SuLoadHeaders_config.pl
+ /usr/local/pl/libAll/read.pm
+
+
+=cut
+
+=head2 Bring classes into namespace
+
+=cut
+
+ use Moose;
+ use SeismicUnix qw ($in $out $on $go $to $suffix_ascii $off $suffix_su $suffix_bin); 
+ use flow;
+ use message;
+ use a2b;
+ use sushw;
+ use readfiles;
+
+=head2 Instantiate classes
+
+     Use classes:
+     flow
+     log
+     message
+     a2b 
+     sushw
+
+=cut
+
+  my $log 				= new message();
+  my $run    				= new flow();
+  my $sufilter				= new sufilter();
+  my $sugain				= new sugain();
+  my $susort				= new susort();
+  my $sunmo				= new sunmo();
+  my $suwind                            = new suwind();
+  my $sustack                           = new sustack();
+  my $suxwigb				= new suxwigb();
+  my $read				= new readfiles();
+
+=head2 Incorporate important
+
+ Project work variables
+
+ DATA='/home/gom/FalseRiver/seismics/data/Bueche/092416/H/1/su'
+
+=cut
+
+  my ($DATA_SEISMIC_SU) = $Project->DATA_SEISMIC_SU();
+
+=head2 Declare
+
+  local variable in memory 
+
+=cut
+
+  my (@flow,@items);
+  my (@a2b,@a2bNote,$a2bVersion);
+  my (@sushw,@inbound_sufile_sushw,@file_in_sushw);
+  my (@headerfile_in_sushw,@sufile_in_sushw,);
+  my (@outbound_sushw);
+  my (@file_in_a2b,@inbound_a2b,@outbound_a2b);
+
+=head2 Get configuration information
+
+=cut
+
+  my ($err,$CFG) = $read -> cfg("/usr/local/pl/SuLoadHeaders_config.pl");
+
+  my $ascii_file_in 		= $CFG->{a2b}{1}{ascii_file_in};
+  my $number_of_data_columns  	= $CFG->{a2b}{1}{number_of_data_columns};
+  my $replace_header_words   	= $CFG->{a2b}{1}{replace_header_words};
+  my $sufile_in    		= $CFG->{sushw}{1}{sufile_in};
+
+  #print("$inbound_directory\n\n");
+  #print("$first_file_number\n\n");
+
+=head2 Check configuration file for errors
+
+=cut
+
+if ( $err) {
+     print(STDERR $err, "\n");
+         exit(1);
+         }
+
+=head2 Declare
+
+  file names 
+
+=cut
+
+  $file_in_a2b[1]		= $ascii_file_in;
+  $inbound_a2b[1] 		= $DATA_SEISMIC_SU.'/'.$file_in_a2b[1];
+  $outbound_a2b[1] 		= $inbound_a2b[1].$suffix_bin;
+
+  $file_in_sushw[1]             = $sufile_in;
+  $headerfile_in_sushw[1]       = $outbound_a2b[1];
+  $sufile_in_sushw[1]           = $file_in_sushw[1].$suffix_su;
+  $inbound_sufile_sushw[1] 	= $DATA_SEISMIC_SU.'/'.$sufile_in_sushw[1] ;
+  $outbound_sushw[1]            = $DATA_SEISMIC_SU.'/'.$file_in_sushw[1].'_header'.$suffix_su;
+
+
+=head2 Set
+
+ a2b
+ a2b n1=1 outpar=/dev/tty < $header_file > $binary_file
+
+=cut
+
+ a2b -> clear();
+ a2b -> floats_per_line($number_of_data_columns);
+ a2b -> outpar('/dev/tty');
+ $a2b[1] = a2b -> Step();
+
+=head2 Set
+
+ sushw 
+
+ sushw < $sufile_in  key=cdp infile=$binary_file > $sufile_out
+
+=cut
+
+ sushw -> clear();
+ sushw -> headerwords($replace_header_words);
+ sushw -> infile(\$headerfile_in_sushw[1]); 
+ $sushw[1] = sushw -> Step();
+
+=head2 DEFINE FLOW(S)
+ 
+=cut
+
+ @items   = ($a2b[1],$in,$inbound_a2b[1],$out,
+             $outbound_a2b[1]);
+ $flow[1] = $run->modules(\@items);
+  
+ @items   = ($sushw[1],$in,$inbound_sufile_sushw[1],$out,
+             $outbound_sushw[1]);
+ $flow[2] = $run->modules(\@items);
+
+=head2 RUN FLOW(S)
+
+=cut
+
+ $run->flow(\$flow[1]);
+ $run->flow(\$flow[2]);
+ 
+=head2 LOG FLOW(S)
+
+ TO SCREEN AND FILE
+
+=cut
+
+ print  "$flow[1]\n";
+ print  "$flow[2]\n";
+#$log->file($flow[1]);
+#$log->file($flow[2]);

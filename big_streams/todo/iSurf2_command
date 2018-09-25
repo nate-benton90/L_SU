@@ -1,0 +1,78 @@
+#! /usr/bin/perl
+
+# SCRIPT NAME
+# command.pl
+# Juan M. Lorenzo
+# August 16, 2011
+# run a perl command
+# to be used with SuDisp2.pl to locate 
+# number of samples in sufft frequency direction
+# i.e. nearest prime factor (npfo function)
+
+# LOAD GENERAL PERL LIBRARY
+        use lib './libAll';  
+
+# Use shell transparently to locate home directory before compilation
+
+        my $library_location;
+
+        BEGIN {
+      use Shell qw(echo);
+      $home_directory = ` echo \$HOME`;
+      chomp $home_directory;
+      $library_location = $home_directory.'/lsu/libAll';
+        }
+
+# LOAD GENERAL PERL LIBRARY
+  use lib $library_location;
+
+# library path
+ use lib '/usr/local/pl/libAll';
+
+# import system variables
+  use SeismicUnix qw($suffix_su);
+  use Project;
+  my $Project = new Project();
+
+  my ($DATA_SEISMIC_SU) 	= $Project->DATA_SEISMIC_SU();
+  my ($PL_SEISMIC) 		= $Project->PL_SEISMIC();
+
+# library path 
+  use lib './libAll';
+  use iSurf2 qw($file_name);
+
+  use lib './';
+  use Project_Variables;
+# use library
+  my ($date)	 		= Project_Variables::date();
+
+# INPUT SUFILE NAME 
+$N=1;
+   $sufile_in[$N] 		= $file_name;
+$N=0;
+
+# INBOUND SUFILE NAMES with path
+$N=1;
+   $inbound[$N]			 = $DATA_SEISMIC_SU.'/'.$sufile_in[$N].$suffix_su;
+$N=0;
+
+# OUTPUT SUFILE NAME 
+$N=1;
+   $sufile_out[$N]  		= $file_name.'_junk';
+   $outbound[$N]  		= $DATA_SEISMIC_SU.'/'.$sufile_out[$N];
+$N=0;
+
+
+	$sufft[1]		= ("				\\
+				sufft				\\
+		");
+
+#  DEFINE FLOW(S)
+	$flow[1] = (" 						\\
+		$sufft[1]					\\
+                <$inbound[1]  					\\
+                >$outbound[1] 					\\
+		");
+# RUN FLOW(S)
+	system $flow[1]; 
+#       system 'echo', $flow[1];	

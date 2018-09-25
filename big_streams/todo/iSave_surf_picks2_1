@@ -1,0 +1,124 @@
+#! /usr/bin/perl
+
+# SCRIPT NAME
+# iSave_surf_picks2_1.pl
+# Purpose: Originally to Save final Top Mute of Data 
+# Juan M. Lorenzo
+# May 5 2009 
+# V2. change top mute parameters to toptom mute parameters
+# Aug 12, 2011
+# V2.1 Sept 26 2011
+# adapted from iSave_top_mute_pars.pl
+# for use to save f-p picks
+# May 28, 2012 V 2_1 
+# make compatible with latest versions of SuDisp2_1
+
+
+
+# Use shell transparently to locate home directory before compilation
+
+        my $library_location;
+
+        BEGIN {
+                use Shell qw(echo);
+
+                $home_directory = ` echo \$HOME`;
+                chomp $home_directory;
+                $library_location[1] = $home_directory.'/lsu/libAll';
+        }
+
+# LOAD USER GLOBAL SYSTEM PERL LIBRARY
+  use lib $library_location[1];
+
+# LOAD SEISMIC UNIX GLOBAL SYSTEM LIBARAY
+  use lib '/usr/local/pl/libAll';
+  use SeismicUnix qw ($itemp_surf_picks_ $isurf_pf_picks_ $itemp_surf_picks_sorted_par_ $isurf_par_);
+  use Project;
+  my $Project = new Project();
+  ($DATA_SEISMIC_SU)      = $Project->DATA_SEISMIC_SU();
+  ($GEOPSY)               = $Project->GEOPSY();
+
+# library location
+  use lib './libAll';
+
+# use library
+# import system variables
+  use iSurf2_1 qw ($file_name);
+
+# sufile names
+    $sufile_in[1] 	= $file_name;
+    $sufile_in[2] 	= $file_name;   
+    $sufile_in[3] 	= $file_name;
+
+
+# COPY DATA
+# copy data
+        $data_in[1]	= $itemp_surf_picks_sorted_par_;
+        $data_out[1]	= $isurf_par_;
+        $inbound[1]	= $DATA_SEISMIC_SU.'/'.$data_in[1].$sufile_in[1];
+        $outbound[1]	= $DATA_SEISMIC_SU.'/'.$data_out[1].$sufile_in[1];
+
+# copy data
+        $data_in[2]	= $itemp_surf_picks_;
+        $data_out[2]	= $isurf_pf_picks_;
+        $inbound[2]	= $DATA_SEISMIC_SU.'/'.$data_in[2].$sufile_in[2];
+        $outbound[2]	= $GEOPSY.'/'.$data_out[2].$sufile_in[2];
+
+# copy data
+        $data_in[3]	= $itemp_surf_picks_;
+        $data_out[3]	= $isurf_pf_picks_;
+        $inbound[3]	= $DATA_SEISMIC_SU.'/'.$data_in[3].$sufile_in[3];
+        $outbound[3]	= $DATA_SEISMIC_SU.'/'.$data_out[3].$sufile_in[3];
+
+	$cp[1] =  (" cp							\\
+		$inbound[1]						\\
+		$outbound[1]						\\
+		");
+
+	$cp[2] =  (" cp							\\
+		$inbound[2]						\\
+		$outbound[2]						\\
+		");
+
+	$cp[3] =  (" cp							\\
+		$inbound[3]						\\
+		$outbound[3]						\\
+		");
+
+#scale properly for geopsy
+	$gawk[1] = (" gawk \'{print \$1,\$2/1000 }\' $inbound[2] >$outbound[2]");
+
+#  DEFINE FLOW(S)
+	$flow[1] = (" 							\\
+		$cp[1] 	 						\\
+		&							\\
+		"); 
+#  DEFINE FLOW(S)
+	$flow[2] = (" 							\\
+		$cp[2] 	 						\\
+		&							\\
+		"); 
+#  DEFINE FLOW(S)
+	$flow[3] = (" 							\\
+		$cp[3] 	 						\\
+		&							\\
+		"); 
+
+#  DEFINE FLOW(S)
+	$flow[4] = (" \\
+			$gawk[1] \\
+		   ");
+
+# RUN FLOW(S)
+       system $flow[1]; 
+       system 'echo', $flow[1];	
+
+       system $flow[2]; 
+       system 'echo', $flow[2];	
+
+       system $flow[3]; 
+       system 'echo', $flow[3];	
+
+       system $flow[4]; 
+       system 'echo', $flow[4];	
+

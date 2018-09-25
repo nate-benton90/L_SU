@@ -1,0 +1,126 @@
+#! perl -w
+
+=pod
+
+=head1 DOCUMENTATION
+
+=head2 SYNOPSIS 
+
+ PROGRAM NAME: createDBsqlite3.pl
+ AUTHOR: Juan Lorenzo
+ DATE: May 11 2012
+ DESCRIPTION
+ Version 1
+ A new database is created or an pre-existing database
+ has new entries added as follows:
+		   id    INTEGER PRIMARY KEY,
+	           PROJECT_HOME		TEXT,
+		   site 		TEXT,
+		   monitoring_well	TEXT,
+                   preparation_well	TEXT,
+		   stage		TEXT,
+		   process		TEXT,
+		   filename             TEXT,
+		   start_time           REAL,
+		   rms	                REAL)
+
+=cut
+
+ use DBI;
+ use warnings;
+ use strict;
+
+# Import special system definitions
+ use lib '/usr/local/pl/libAll';
+# Bring in definitions for SeismicUnix
+ use SeismicUnix qw ($suffix_segy $suffix_su);
+ use Project;
+ my $Project = new Project();
+ use manage_files_by;
+
+# Bring in definitions for Sqlite
+ use Sqlite qw ( $db );
+
+# Bring in directory definitions
+ my ($DATABASE_SEISMIC_SQLITE)  = $Project->DATABASE_SEISMIC_SQLITE();
+
+# Project Variables must be local
+ my ($PROJECT_HOME)		= Project_Variables::PROJECT_HOME();
+ my ($site)			= Project_Variables::date();
+ my ($monitoring_well)		= Project_Variables::line();
+ my ($preparation_well)	        = Project_Variables::component();
+ my ($stage)			= Project_Variables::stage();
+ my ($process)			= Project_Variables::process();
+
+# declare local arrays 
+ my @db_file_name;
+
+# declare database handle (pointer to database)
+ my $dbh;
+ my @dbhlite_inbound;
+ my $file_existence1;
+ my $sth;
+
+print("$PROJECT_HOME,$site,$monitoring_well,$preparation_well,$stage,$process\n\n");
+
+# declare database file names
+ $db_file_name[1]	      	= $db.'1';
+ $dbhlite_inbound[1]        	= $DATABASE_SEISMIC_SQLITE.'/'.$db_file_name[1];
+
+
+# DATABASE WORK #########################
+# establish database arguments for performing 
+# several tasks
+# such as opening and closing database files
+# or carrying out defined database functions
+ my @db_arguments = {RaiseError => 1, AutoCommit => 1};
+
+# Test to see if database exist -
+ ($file_existence1) = manage_files_by::does_file_exist(\$dbhlite_inbound[1]);
+
+ if ($file_existence1) {
+	print("database $db_file_name[1] already exists \n\n");
+	print("Can not overwrite existing database \n\n");
+ } 
+ else {
+        print("database $db_file_name[1] does not exist\n\n");
+	print("Writing new database \n\n");
+ }
+
+# Create a new database if it does not exist already
+ if (!$file_existence1) {
+	print("Create database: $dbhlite_inbound[1] \n\n");
+	$dbh = DBI->connect("dbi:SQLite:$dbhlite_inbound[1]", "", "",
+	$db_arguments[1]) or die "Could not connect to database: " . DBI->errstr;
+
+# In new database create a table
+	print("Create an empty table: consisting of \n
+		   id    INTEGER PRIMARY KEY,\
+	           PROJECT_HOME		TEXT,\
+		   site 		TEXT,\
+		   monitoring_well	TEXT,\
+                   preparation_well	TEXT,\
+		   stage		TEXT,\
+		   process		TEXT,\
+		   filename             TEXT,\
+		   start_time		REAL,\
+		   rms			REAL\n\n");
+
+        $dbh->do("CREATE TABLE segy (id INTEGER PRIMARY KEY,
+		   PROJECT_HOME		TEXT,
+		   site 		TEXT,
+		   monitoring_well	TEXT,
+                   preparation_well	TEXT,
+		   stage		TEXT,
+		   process		TEXT,
+		   filename             TEXT,
+		   start_time	        REAL,
+		   rms			REAL)
+		");
+
+# disconnect from sqlite 3 server
+    	$dbh->disconnect();
+
+  }
+
+

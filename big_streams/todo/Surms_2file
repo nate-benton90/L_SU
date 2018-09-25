@@ -1,0 +1,130 @@
+#! /usr/bin/perl
+# -w
+ use strict;
+ use warnings;
+
+# SCRIPT NAME: surms.pl 
+# PURPOSE: script to extract rms amplitudes of traces
+# DATE Jan. 17, 2012
+
+# CLASSES 
+  use lib '/usr/local/pl/libAll';
+   use Project;
+  my $Project = new Project();
+  use SeismicUnix qw ($suffix_su $rms_amp);
+  use Sqlite qw ( $db );
+
+# use library@out
+# Bring in directory definitions  
+  my ($TEMP_DATA_SEISMIC_SU) 	= $Project->TEMP_DATA_SEISMIC_SU();
+  my ($DATA_SEISMIC_SU)		= $Project->DATA_SEISMIC_SU();
+  my ($DATABASE_SEISMIC_SQLITE) = $Project->DATABASE_SEISMIC_SQLITE();
+
+# use library
+  use lib './libAll';
+  use Surms;
+
+# declare local arrays 
+  my @flow;
+  my @dbhlite_inbound;
+  my @db_file_name;
+  my (@surms,@surms_outpar,@surms_sufile,@surms_inbound);
+  my (@cat,@cat_inbound,@cat_outbound);
+  my (@touch,@touch_inbound);
+  my (@rm,@rm_inbound);
+  my ($N, $num_files, $surms_inbound);
+
+# declare database file names
+  $db_file_name[1]	      	= $db.'1';
+  $dbhlite_inbound[1]        	= $DATABASE_SEISMIC_SQLITE.'/'.$db_file_name[1];
+
+
+# CREATE FILE
+  $touch[1] = ("touch \\
+	    "); 
+
+# CONCATENATE
+  $cat[1] = ("cat \\
+	    ");
+# RM 
+  $rm[1] = ("rm \\
+	    ");
+
+
+# SUMAX parameters
+  my(	$ref_surms_mode,
+	$ref_surms_key,
+	$ref_surms_output,
+	$ref_surms_verbose_format,
+	$surms_outpar,
+	$ref_surms_notes,
+	$surms_Pmax
+   	)   = Surms::surms();
+
+# only 1 panel in this case; $P=1
+        my $P = $surms_Pmax;
+
+
+# TOUCH PARAMETERS
+  $touch_inbound[1]     = $TEMP_DATA_SEISMIC_SU.'/'.$rms_amp;
+
+# RM PARAMETERS
+  $rm_inbound[1]        = $TEMP_DATA_SEISMIC_SU.'/'.$rms_amp;
+
+# FILE_LISt PARAMETERS
+  my (  $ref_sufile
+	)   = Sqlite::get_file_list(\@dbhlite_inbound);
+  $num_files = scalar (@$ref_sufile);
+# print(" Processing $num_files files\n\n");
+
+# PRE-FLOW PROGRAMS
+  $flow[0] =  ("$rm[1] $rm_inbound[1]; 			\\
+		$touch[1] $touch_inbound[1]		\\
+		&					\\
+	");
+
+  system $flow[0];
+# CAT parameters
+  $cat_inbound[1] 		= $surms_outpar;
+  $cat_outbound[1]		= $TEMP_DATA_SEISMIC_SU.'/'.$rms_amp;
+
+#$num_files =12;
+for ($N=0;$N<$num_files; $N++) {
+   	$surms_sufile[$N]	= $$ref_sufile[$N];
+   	$surms_inbound     	= $DATA_SEISMIC_SU.'/'.$surms_sufile[$N]; 
+        print("processing $N of $num_files\n\n");
+        print("file name is $surms_sufile[$N]\n\n");
+
+
+# SUMAX PROGRAM
+       $surms[$N]      =("sumax                               	\\
+                mode=$$ref_surms_mode[$P]                       \\
+                output=$$ref_surms_output[$P]                   \\
+                verbose=$$ref_surms_verbose_format[$P]          \\
+                outpar=$surms_outpar 	                		\\
+                ");
+
+# DEFINE FLOW(s)
+	$flow[1]  =   (" $surms[$N]				\\
+			< $surms_inbound			\\
+		 ");  
+# DEFINE FLOW(s)
+        $flow[2]  =   (" $cat[1]				\\
+			 $cat_inbound[1] 			\\
+			 >>$cat_outbound[1]			\\
+		 ");
+	
+# RUN FLOW (s)
+  system $flow[1];
+  
+# RUN FLOW (s)
+  system $flow[2];
+  
+# LOG FLOW
+# system 'echo',$flow[0];
+# system 'echo', $flow[1];
+# system 'echo', $flow[2];
+
+}
+
+# END OF RUN FLOWS

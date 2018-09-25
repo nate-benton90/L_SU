@@ -1,0 +1,92 @@
+#! /usr/bin/perl -w
+
+# Program name: Su2segy_
+# Purpose: To convert su data to segy data
+# file ip and op names can be input on command line
+# Date: Oct. 15, 2011
+# Author: Juan Lorenzo
+# V. 1.0
+# Date May 3, 2012
+# V1.1 changed lcoation of system variables from ~/System_Variables.pm
+# to Project_Variables.pm in the local directory  
+# and removed two useless lines
+
+# LOAD GENERAL PERL LIBRARY
+   use lib './libAll';  
+
+# Use shell transparently to locate home directory before compilation
+
+   my $library_location;
+
+   BEGIN {
+     use Shell qw(echo);
+     $home_directory = ` echo \$HOME`;
+     chomp $home_directory;
+     $library_location = $home_directory.'/lsu/libAll';
+   }
+
+# LOAD GENERAL PERL LIBRARY
+  use lib $library_location;
+
+# define library of system subroutines 
+  use lib '/usr/local/pl';
+  use manage_files_by;
+
+# define system library path
+  $PL = '/usr/local/pl';
+  $LSU_header = 'LSU_header';
+
+# define system library path
+  use lib '/usr/local/pl/libAll';
+
+# import system variables
+  use SeismicUnix qw ($suffix_segy $suffix_su $suffix_usp);
+
+# define local library path
+  use lib '/usr/local/pl/libAll';
+   use Project;
+  my $Project = new Project();
+
+# import system variables
+  my ($DATA_SEISMIC_SU)   = $Project->DATA_SEISMIC_SU();
+
+  $sufile_in[1]		= <$ARGV[0]>;
+  $segyfile_out[1]	= <$ARGV[1]>;
+
+print("\n input file is  $DATA_SEISMIC_SU/$sufile_in[1]\n");
+print(" output file is $segyfile_out[1]\n\n");
+
+  if (<$ARGV[0]> eq '')  {
+	print("\nUsage: Su2segy_ \n");
+	print("\tOn the same line enter one input file name\n");
+	print("\tand one output file name with its full directory path\n");
+	
+	die("\tFor example: Su2segy_ input.su path2/output.segy  \n\n");
+  }
+
+  $inbound_segyhdrs[1]	= $DATA_SEISMIC_SU.'/'.$sufile_in[1];
+  $outbound_segywrite[1]= $segyfile_out[1];
+
+# DEFINE SU MODULES
+  $segywrite[1]		= (" segywrite			\\
+			bfile=$DATA_SEISMIC_SU/binary	\\
+			hfile=$PL/$LSU_header		\\
+			");
+
+
+# create segy binary and ascii header using seismic unix file
+  $segyhdrs[1]		= ("  segyhdrs  			\\
+			bfile=$DATA_SEISMIC_SU/binary		\\
+			hfile=$DATA_SEISMIC_SU/CSM_header   	\\
+			");
+
+# DEFINE FLOW(S)
+		$flow[1]  = (" $segyhdrs[1] 		\\
+			< $inbound_segyhdrs[1]  |	\\
+			$segywrite[1]			\\
+			tape=$outbound_segywrite[1]	\\
+		");
+			 
+# RUN FLOW(S)
+ system $flow[1]; 
+ system 'echo', $flow[1];

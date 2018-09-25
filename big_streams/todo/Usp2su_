@@ -1,0 +1,83 @@
+#! /usr/bin/perl -w
+
+# Program name: Usp2su_
+# Purpose: To convert usp data to su data
+# Date: Oct. 20, 2011
+# Washington, D.C.
+# Author: Juan Lorenzo
+# V. 1.0
+
+# LOAD GENERAL PERL LIBRARY
+   use lib './libAll';  
+
+# Use shell transparently to locate home directory before compilation
+   my $library_location;
+
+   BEGIN {
+     use Shell qw(echo);
+     $home_directory = ` echo \$HOME`;
+     chomp $home_directory;
+     $library_location = $home_directory.'/lsu/libAll';
+   }
+
+# LOAD GENERAL PERL LIBRARY
+  use lib $library_location;
+
+# define library of system subroutines 
+  use lib '/usr/local/pl';
+  use manage_files_by;
+
+# define system library path
+  use lib '/usr/local/pl/libAll';
+
+# import system variables
+  use SeismicUnix qw ($suffix_segy $suffix_su $suffix_usp);
+
+# define local library path
+  use lib './libAll';
+
+# use local library
+  use System_Variables2;
+
+# use local program parameter file
+#  use Usp2su qw ($file_name);
+
+# import system variables
+  my ($DATA_SEISMIC_SEGY) = System_Variables2::DATA_SEISMIC_SEGY();
+  my ($DATA_SEISMIC_SU)   = System_Variables2::DATA_SEISMIC_SU();
+  my ($DATA_SEISMIC_USP)  = System_Variables2::DATA_SEISMIC_USP();
+  my ($PL_SEISMIC) 	  = System_Variables2::PL_SEISMIC();
+  my ($date)		  = System_Variables2::date();
+
+  $inbound_usp2su[1]	= <$ARGV[0]>;
+  $outbound_segy2su[2]	= <$ARGV[1]>;
+
+  $inbound_usp2segy[1]	= $inbound_usp2su[1];
+  $outbound_usp2segy[1] = $DATA_SEISMIC_SEGY.'/'.'.junk';
+
+  $inbound_segy2su[2]	= $DATA_SEISMIC_SEGY.'/'.'.junk';
+
+	$segyread[1]	= ("  segyread 			\\
+			bfile=$DATA_SEISMIC_SEGY/binary	\\
+			hfile=$DATA_SEISMIC_SEGY/header	\\
+			");
+
+# DEFINE FLOW(S)	
+	$flow[1] = (" usp2segy				\\
+			-N $inbound_usp2segy[1]    	\\
+			-O $outbound_usp2segy[1]	\\
+			-V				\\
+		");
+
+	$flow[2] = (" $segyread[1] 			\\
+			tape=$inbound_segy2su[2] |	\\
+			segyclean			\\
+			> $outbound_segy2su[2] 		\\
+		");
+
+# RUN FLOW(S)
+ system $flow[1]; 
+# system 'echo', $flow[1];
+
+ system $flow[2]; 
+# system 'echo', $flow[2];

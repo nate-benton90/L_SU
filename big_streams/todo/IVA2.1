@@ -1,0 +1,373 @@
+#!/usr/bin/perl
+
+use Moose;
+
+=head1 DOCUMENTATION
+
+=head2 SYNOPSIS 
+
+ PROGRAM NAME: IVA2 
+ AUTHOR: Juan Lorenzo
+ DATE:  April 2 2009 
+        October 2014
+        July 2015 updated to oop
+        August 2015 introduced Tk widgets
+        August 16 made all event-driven
+
+ DESCRIPTION: Interactively test NMO in data
+ Verstion 2.0 MainWIndow in subroutine 
+              leads to multiple segementation faults
+              when MainWindow is destroyed > 1
+ Version: 2.1 is fully event driven
+
+=head2 USE
+
+=head3 NOTES 
+
+=head4 
+ Examples
+
+=head3 SEISMIC UNIX NOTES
+=head4 CHANGES and their DATES
+
+
+=cut
+ 
+
+=head2 STEPS 
+
+ 1.  use the local library of the user
+ 1.1 bring is user variables from a local file
+ 2.  create instances of the needed subroutines
+
+=cut
+
+=head2 Import
+ 
+ packages
+
+=cut 
+
+ use lib '/usr/local/pl/libAll';
+ use IVA2;
+ use Tk;
+
+ my $IVA_Tk  =  {
+     _prompt   => ''
+    };
+
+ use lib "./libAll";
+ use IVA2_config qw ($file_name $cdp_first $cdp_inc $cdp_last $data_scale $freq $number_of_velocities $first_velocity $velocity_increment $min_semblance $max_semblance); 
+ use SeismicUnix qw ($true $false);
+
+ my $iva              = new IVA2();
+
+ my ($calc_rb,$exit_rb,$pick_rb,$next_rb,$saveNcont_rb);
+ my $rb_value 		= "red";
+ my $old_data;
+ my $cdp    		= $cdp_first;
+ my $next_step          = 'stop';
+ my $number_of_tries    = 0;
+ our $mw;
+ $iva		        ->number_of_tries($number_of_tries);
+
+
+=pod 
+
+ VELAN DATA 
+ must be in units of: m/s
+ must seed first cdp
+
+ Set the type of messages you will receive
+ for now it also sets the CDP number to use
+ so keep it after setting cdp numbers
+
+=cut
+
+  $iva->file_in($file_name);
+  $iva->data_scale($data_scale);
+  $iva->freq($freq);
+  $iva->number_of_velocities($number_of_velocities);
+  $iva->first_velocity($first_velocity);
+  $iva->velocity_increment($velocity_increment);
+  $iva->min_semblance($min_semblance);
+  $iva->max_semblance($max_semblance);
+  $iva->cdp_num($cdp);
+  $iva-> set_message('iva');
+
+
+=pod
+
+  Check for old data
+
+
+=cut
+    $old_data = $iva->old_data('velan');
+    if($old_data) {
+        print("Old picks already exist.\n");
+        print("Delete \(\"rm \*old\*\"\)or Save old picks, and then restart\n\n");
+        exit;
+    }    
+
+=pod
+
+ Create Main Window and start event-driven loop
+ Interaction with user
+ initialize values
+ If oicks are new, show
+ message to user on how to pick data
+
+=cut
+if (!$old_data) {
+    print("NEW PICKS\n");
+    $iva        ->message('first_velan');  
+    $iva	->number_of_tries($false); 
+    $iva	->cdp_num($cdp);
+    $iva	->cdp_min($cdp);
+    $iva	->cdp_max($cdp);
+
+=pod
+     Display first semblance
+=cut	
+
+	$iva            ->semblance(); 
+
+=pod
+    -Based on semblance,
+      decide whether to PICK or move on to NEXT CDP
+    -radio_buttons stop flow
+       Must be AFTR semblance
+=cut
+
+  $mw    = MainWindow -> new;
+
+  $mw 	->title("Options"); 
+  $calc_rb = $mw->Radiobutton(
+               -text     =>'CALC',
+               -value    =>'calc',
+               -variable => \$rb_value,
+               -command  => [\&set_calc] )->pack(-side => 'left'); 
+
+  $next_rb = $mw->Radiobutton(
+               -text     =>'NEXT',
+               -value    =>'next',
+               -variable => \$rb_value,
+               -command  => [\&set_next] )->pack(-side => 'left');  
+
+  $pick_rb = $mw->Radiobutton(
+               -text     =>'PICK',
+               -value    =>'pick',
+               -variable => \$rb_value,
+               -command  => [\&set_pick] )->pack(-side => 'left'); 
+
+ $saveNcont_rb= $mw->Radiobutton(
+               -text     =>'Save and Continue',
+               -value    =>'saveNcont',
+               -variable => \$rb_value,
+               -command  => [\&set_saveNcont] )->pack(-side => 'left');  
+
+   $exit_rb = $mw->Radiobutton(
+               -text     =>'EXIT',
+               -value    =>'exit',
+               -variable => \$rb_value,
+               -command  => [\&set_exit] )->pack(-side => 'left');  
+ 
+ MainLoop; # for Tk widgets
+
+
+
+} # for new data
+
+=pod
+
+ set the prompt value according
+ to which button is pressed
+ then exit the MainLoop
+ destroy the main window after the prompt
+ is properly set
+
+=cut  
+
+=pod sub set_pick
+
+callbacks
+
+  send cdp number to $iva
+  delete output of previous semblance
+  plus more callbacks following...
+
+
+=cut
+
+sub set_pick {
+  my $pick = 'pick';
+  $pick_rb->configure(-state => 'normal');
+  $IVA_Tk->{_prompt} = $pick;
+
+
+  #print("prompt is $IVA_Tk->{_prompt}\n\n");
+  print("Picking...\n");
+
+  $iva	       ->cdp_num($cdp);
+ 
+=pod
+  delete output of previous semblance
+=cut
+
+  xk::kill_this('suximage');
+  xk::kill_this('suxwigb');
+
+=pod 
+    -replot 1st semblance
+    -PICK V-T pairs
+    -Increment number of tries to make
+       semblance display interact
+       (number_of_tries = 1)
+
+        Must be AFTR semblance
+  	semblance when number of tries >0
+        also blocks flow
+        place message before semblance
+=cut
+
+  $iva		->message('pre_pick_velan');  
+  $number_of_tries++;
+  $iva		->number_of_tries($number_of_tries); 
+  $iva		->semblance(); 
+
+}
+
+=pod sub set_calc
+
+      -PRESS the CALC button
+      -Increment number of tries to make
+         semblance display interact and show old picks
+         (number_of_tries >1)
+	-radio_buttons stop flow
+           Must be AFTR semblance
+           B4  iWrite_All_iva_out
+
+=cut
+
+sub set_calc {
+  my $calc = 'calc';
+  $calc_rb->configure(-state => 'normal');
+  $IVA_Tk->{_prompt} = $calc;
+  print("Calculating...\n");
+
+=pod
+    delete the output of previous semblance 
+
+=cut
+
+   xk::kill_this('suximage');
+   xk::kill_this('suxwigb');
+
+       $iva	->iWrite_All_iva_out();	
+       $iva	->iVrms2Vint();
+       $iva	->icp_sorted2oldpicks();
+       $iva	->iVpicks2par();
+       $iva	->iSunmo();			
+       $number_of_tries++;
+       $iva	->number_of_tries($number_of_tries); 
+=pod
+       message is needed because semblance halts flow
+       when number_of_tries >0
+=cut
+	$iva	->message('post_pick_velan');  
+	$iva	->semblance();
+}
+
+=head3 sub set_saveNcont
+
+
+=cut
+
+sub set_saveNcont {
+  my $saveNcont = 'saveNcont';
+  $saveNcont_rb->configure(-state => 'normal');
+  $IVA_Tk->{_prompt} = $saveNcont;
+  print("Saving and Continuing...\n");
+}
+
+=pod sub set_next
+
+  In this case the $variable is empty
+  1. increment cdp
+     Exit if beyond last cdp 
+  2. reset prompt
+  3. Otherwise display the first sembance
+  4 ... see following callbacks
+=cut
+
+
+sub set_next {
+  print("Next...\n");
+  $next_rb->configure(-state => 'normal');
+  my $next = '';
+  $IVA_Tk->{_prompt} = $next;
+  $cdp = $cdp+$cdp_inc;
+
+=pod
+
+   delete output of previous semblance
+   delete the output of semblance and iSunmo
+   delete the output of Vrms2Vint 
+
+=cut
+    #xk::kill_this('suximage');
+    #xk::kill_this('suxwigb');
+    #xk::kill_this('xgraph');
+
+  if($cdp > $cdp_last) {
+   set_exit();
+  }
+ 
+=pod
+       display first semblance
+=cut
+
+  $iva           ->semblance(); 
+
+=pod
+     -Based on semblance,
+      decide whether to PICK or move on to NEXT CDP
+     -radio_buttons stop flow
+     Must be AFTR semblance
+=cut
+  $iva          ->message('first_velan');  
+  $iva		->cdp_num($cdp);
+}
+
+=pod  sub set_exit
+
+  saying goodbye 
+  clear old images
+  kill window
+  stop script
+
+=cut
+
+sub set_exit {
+  my $exit = 'exit';
+  $exit_rb->configure(-state => 'normal');
+  $IVA_Tk->{_prompt} = $exit;
+  print("Good bye.\n");
+  print("Not continuing to next cdp\n");
+  xk::kill_this('suximage');
+  xk::kill_this('suxwigb');
+  xk::kill_this('xgraph');
+  $mw->destroy() if Tk::Exists($mw);
+  exit 1;
+}
+
+=pod sub prompt
+
+ return which prompt has been set
+
+=cut
+
+sub prompt{
+ our $variable = $IVA_Tk->{_prompt};
+ return($variable);
+}

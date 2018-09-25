@@ -1,0 +1,99 @@
+#! /usr/bin/perl
+
+# SCRIPT NAME
+# iSurfPicks2par2.pl
+# Purpose: interactively 
+# convert tau-p picks into a par file for later overplotting 
+# Juan M. Lorenzo
+# Sept. 22 2011 
+# V 1.
+
+## LOAD GENERAL PERL LIBRARY
+   use lib './libAll';
+# Use shell transparently to locate home directory before compilation
+
+     my $library_location;
+
+        BEGIN {
+      use Shell qw(echo);
+      $home_directory = ` echo \$HOME`;
+      chomp $home_directory;
+      $library_location = $home_directory.'/lsu/libAll';
+        }
+
+# LOAD GENERAL PERL LIBRARY
+  use lib $library_location;
+
+# LOAD SEISMIC UNIX GLOBAL SYSTEM LIBARAY
+  use lib '/usr/local/pl/libAll';
+  use SeismicUnix qw ($isurf_par_ $itemp_surf_picks_ $itemp_surf_num_points_ $itemp_surf_picks_sorted_par_ $isurf_check_pickfile_ $suffix_su);
+# import system variables
+  use Project;
+  my $Project = new Project();
+  my ($DATA_SEISMIC_SU) 	= $Project->DATA_SEISMIC_SU();
+
+# library path
+  use lib './libAll';
+
+# use library
+  use iSurf2 qw ($file_name);
+
+# sufile names
+  $sufile_in[1] 		= $file_name;
+
+# sort file names
+  $sortfile_in[1] 		= $itemp_surf_picks_.$sufile_in[1];
+  $inbound[1]  			= $DATA_SEISMIC_SU.'/'.$sortfile_in[1];
+
+#print("inbound =$inbound[1] \n\n");
+#print("sufile =$sufile_in[1] \n\n");
+#print(" itemp_surf_picks_=$itemp_surf_picks_ \n\n");
+
+# par file names
+  $parfile_out[1] 		= $itemp_surf_picks_sorted_par_.$sufile_in[1];
+  $outbound[1]  		= $DATA_SEISMIC_SU.'/'.$parfile_out[1];
+
+# wc paramters
+  $wc_file_in[1]		= $itemp_surf_picks_.$sufile_in[1];
+  $wc_inbound[1]		= $DATA_SEISMIC_SU.'/'.$wc_file_in[1]; 
+  $wc_outbound[1]		= $DATA_SEISMIC_SU.'/'.$itemp_surf_num_points_.$sufile_in[1];
+
+# COUNT LINES IN A TEXT FILE
+  	$wc[1] 	=  (" wc 				\\
+		-l					\\
+		");
+
+# SORT a TEXT FILE
+  	$sort[1] 	=  (" sort 			\\
+		-n					\\
+		");
+
+# CONVERT TEXT FILE TO PAR FILE
+   	$mkparfile[1]	=  ("mkparfile			\\
+		string1=fsurf 				\\
+		string2=psurf 				\\
+		");
+
+#  DEFINE FLOW(S)
+	$flow[1] = (" 						\\
+		$sort[1]  					\\
+		< $inbound[1]| 					\\
+		$mkparfile[1] 					\\
+		>$outbound[1] 	 				\\
+								\\
+		"); 
+
+#  DEFINE FLOW(S)
+	$flow[2] = (" 						\\
+		$wc[1]  					\\
+		< $wc_inbound[1] 				\\
+		>$wc_outbound[1] 	 			\\
+								\\
+		"); 
+
+# RUN FLOW(S)
+       system $flow[1]; 
+       system 'echo', $flow[1];	
+
+       system $flow[2]; 
+       system 'echo', $flow[2];	

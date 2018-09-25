@@ -1,0 +1,120 @@
+#! /usr/bin/perl -w 
+=head1 DOCUMENTATION
+
+=head2 SYNOPSIS 
+
+	NAME:     rmProject 
+	Author:   Juan M. Lorenzo 
+	Date:     Sep 25 2017 
+	Purpose:  Delete Project Directores  
+
+        Usage:    directories can be turned
+                  on/off with comment marks ("#")
+=head2 NEEDS
+
+   System_Variables package
+   manage_dirs_by package
+# Import system and local directories
+
+=cut
+
+ use Project;
+  my $Project = new Project();
+use manage_dirs_by;
+
+my ($DATA_GEOMAPS)		      		= $Project->DATA_GEOMAPS();
+my ($DATA_SEISMIC)	               	= $Project->DATA_SEISMIC();
+my ($DATA_GEOMAPS_IMAGES)	       	= $Project->DATA_GEOMAPS_IMAGES();
+my ($DATA_GEOMAPS_IMAGES_JPEG)	    = $Project->DATA_GEOMAPS_IMAGES_JPEG();
+my ($DATA_SEISMIC_DAT)		      	= $Project->DATA_SEISMIC_DAT();
+my ($TEMP_DATA_GEOMAPS)	      		= $Project->TEMP_DATA_GEOMAPS();
+
+my ($ANTELOPE)			      		= $Project->ANTELOPE();
+my ($ISOLA)			      			= $Project->ISOLA();
+my ($PROJECT_HOME)	              	= $Project->PROJECT_HOME();
+my ($DATA_GEOMAPS_BIN)		      	= $Project->DATA_GEOMAPS_BIN();
+my ($DATA_GEOMAPS_IMAGES_TIF)	    = $Project->DATA_GEOMAPS_IMAGES_TIF();
+my ($DATA_GEOMAPS_TEXT)	       		= $Project->DATA_GEOMAPS_TEXT();
+my ($DATA_RESISTIVITY_SURFACE)    	= $Project->DATA_RESISTIVITY_SURFACE();
+my ($DATA_RESISTIVITY_SURFACE_TXT)  = $Project->DATA_RESISTIVITY_SURFACE_TXT();
+my ($DATA_RESISTIVITY_WELL)    		= $Project->DATA_RESISTIVITY_WELL();
+my ($DATA_RESISTIVITY_WELL_TXT)  	= $Project->DATA_RESISTIVITY_WELL_TXT();
+my ($DATA_SEISMIC_BIN)	      		= $Project->DATA_SEISMIC_BIN();
+my ($DATA_SEISMIC_ININT)	      	= $Project->DATA_SEISMIC_ININT();
+my ($DATA_SEISMIC_MATLAB)	      	= $Project->DATA_SEISMIC_MATLAB();
+my ($DATA_SEISMIC_R)	            = $Project->DATA_SEISMIC_R();
+my ($DATA_SEISMIC_RSEIS)	      	= $Project->DATA_SEISMIC_RSEIS();
+my ($DATA_SEISMIC_SAC)		      	= $Project->DATA_SEISMIC_SAC();
+my ($DATA_SEISMIC_PASSCAL_SEGY)	    = $Project->DATA_SEISMIC_PASSCAL_SEGY();
+my ($DATA_SEISMIC_SIERRA_SEGY)	    = $Project->DATA_SEISMIC_SIERRA_SEGY();
+my ($DATA_SEISMIC_SEGY)	      	    = $Project->DATA_SEISMIC_SEGY();
+my ($DATA_SEISMIC_SU)		      	= $Project->DATA_SEISMIC_SU();
+my ($DATA_SEISMIC_SEG2)	      	    = $Project->DATA_SEISMIC_SEG2();
+my ($DATA_SEISMIC_SEGD)	      	    = $Project->DATA_SEISMIC_SEGD();
+my ($DATA_SEISMIC_SEGY_RAW)	      	= $Project->DATA_SEISMIC_SEGY_RAW();
+my ($DATA_SEISMIC_TXT)	      	    = $Project->DATA_SEISMIC_TXT();
+my ($DATA_SEISMIC_SU_RAW)	      	= $Project->DATA_SEISMIC_SU_RAW();
+my ($DATABASE_SEISMIC_SQLITE)       = $Project->DATABASE_SEISMIC_SQLITE;
+my ($GEOPSY)   			      		= $Project->GEOPSY;
+my ($GIF_SEISMIC)			        = $Project->GIF_SEISMIC();
+my ($GMT_SEISMIC)	      			= $Project->GMT_SEISMIC();
+my ($JPEG_SEISMIC)			      	= $Project->JPEG();
+my ($C_SEISMIC)		      	       	= $Project->C_SEISMIC();
+my ($CPP_SEISMIC)		      		= $Project->CPP_SEISMIC();
+my ($MATLAB_SEISMIC)		      	= $Project->MATLAB_SEISMIC();
+my ($MATLAB_WELL)		      		= $Project->MATLAB_WELL();
+my ($MMODPG)			      		= $Project->MMODPG();
+my ($PL_SEISMIC)		      		= $Project->PL_SEISMIC();
+my ($R_RESISTIVITY_SURFACE)	      	= $Project->R_RESISTIVITY_SURFACE();
+my ($RESISTIVITY_SURFACE)	      	= $Project->RESISTIVITY_SURFACE();
+my ($R_SEISMIC)			      		= $Project->R_SEISMIC();
+my ($R_WELL)			      		= $Project->R_WELL();
+my ($PL_WELL)			      		= $Project->PL_WELL();
+my ($PS_SEISMIC)		      		= $Project->PS_SEISMIC();
+my ($PS_WELL)			      		= $Project->PS_WELL();
+my ($SH_SEISMIC)		      		= $Project->SH_SEISMIC();
+my ($SURFACE)		      			= $Project->SURFACE();
+my ($TEMP_DATA_SEISMIC)		      	= $Project->TEMP_DATA_SEISMIC();
+my ($TEMP_DATA_SEISMIC_SU)	      	= $Project->TEMP_DATA_SEISMIC_SU();
+my ($TEMP_FAST_TOMO)		       	= $Project->TEMP_FAST_TOMO();
+my ($WELL)			      			= $Project->WELL();
+my ($DATA_WELL)			      		= $Project->DATA_WELL();
+
+# print("ANTELOPE= $ANTELOPE \n\n");
+# print("Home Directory 		= $PROJECT_HOME \n\n");
+# print("DATA_GEOMAPS_BIN        	= $DATA_GEOMAPS_BIN \n\n");
+# print("GEOPSY                   = $GEOPSY \n\n");
+# print("MMODPG			= $MMODPG\n\n");
+# print("DATA_RESISTIVITY_SURFACE  = $DATA_RESISTIVITY_SURFACE \n\n");
+# print("DATA_RESISTIVITY_SURFACE_TXT  = $DATA_RESISTIVITY_SURFACE_TXT \n\n");
+# print("DATA_SEISMIC_BIN         = $DATA_SEISMIC_BIN \n\n");
+#print("DATA_SEISMIC_ININT       = $DATA_SEISMIC_ININT \n\n");
+# print("DATA_SEISMIC_MATLAB      = $DATA_SEISMIC_MATLAB\n\n");
+# print("DATA_SEISMIC_PASSCAL_SEGY= $DATA_SEISMIC_PASSCAL_SEGY \n\n");
+# print("DATA_SEISMIC_R           = $DATA_SEISMIC_R \n\n");
+# print("DATA_SEISMIC_RSEIS       = $DATA_SEISMIC_RSEIS \n\n");
+# print("DATA_SEISMIC_SAC         = $DATA_SEISMIC_SAC \n\n");
+# print("DATA_SEISMIC_SEGD        = $DATA_SEISMIC_SEGD \n\n");
+# print("DATA_SEISMIC_SEG2        = $DATA_SEISMIC_SEG2 \n\n");
+# print("DATA_SEISMIC_SEGY        = $DATA_SEISMIC_SEGY \n\n");
+# print("DATA_SEISMIC_SIERRA_SEGY = $DATA_SEISMIC_SIERRA_SEGY \n\n");
+# print("DATA_SEISMIC_SU          = $DATA_SEISMIC_SU \n\n");
+# print("DATA_SEISMIC_TXT         = $DATA_SEISMIC_TXT \n\n");
+# print("DATAWELL                 = $DATA_WELL \n\n");
+# print("DATABASE_SEISMIC_SQLITE  = $DATABASE_SEISMIC_SQLITE \n\n");
+# print("ISOLA  			= $ISOLA \n\n");
+# print("JPEG 			= $JPEG_SEISMIC \n\n");
+# print("C_SEISMIC 		= $C_SEISMIC \n\n");
+# print("CPP_SEISMIC 		= $CPP_SEISMIC \n\n");
+# print("MATLAB_SEISMIC 		= $MATLAB_SEISMIC \n\n");
+# print("MATLAB_WELL 	        = $MATLAB_WELL \n\n");
+# print("PL_SEISMIC 		= $PL_SEISMIC \n\n");
+# print("PL_WELL 			= $PL_WELL \n\n");
+# print("R_RESISTIVITY_SURFACE	= $R_RESISTIVITY_SURFACE \n\n");
+# print("PROJECT_HOME 		= $PROJECT_HOME \n\n");
+# print("WELL 			= $WELL \n\n");
+# print("SH_SEISMIC		= $SH_SEISMIC \n\n");
+# 
+# use a method in directories package
+# TODO
+#  manage_dirs_by::rm_dir($SURFACE); 

@@ -1,0 +1,532 @@
+#! /usr/bin/perl -w
+
+=head1 DOCUMENTATION
+
+=head2 SYNOPSIS 
+
+ PROGRAM NAME: iSurf4_Tk
+ PURPOSE: interactive Surface Wave Analysis
+          GUI control 
+ AUTHOR:  Juan Lorenzo
+
+=head2 CHANGES and their DATES
+
+ DATE:    January 26 2017 
+ Version  1.0 
+ 
+    binheader is used for everything serious
+    gather is to be used for texting
+    correct offset is essential for applying the mute
+
+=head2 DESCRIPTION
+
+   Interactively pick both taup muting parameters
+   and fp muting parameters
+
+=head2 USE
+
+=head2 Examples
+
+=head2 SEISMIC UNIX NOTES
+
+=head2 STEPS
+
+ 1.  import user variables from a local file
+ 2.  create instances of the needed subroutines
+
+=head2 NOTES 
+
+ We are using Moose.
+ Moose already declares that you need debuggers turned on
+ so you don't need a line like the following:
+ use warnings;
+ 
+ USES the following classes:
+ sucat
+ and packages of subroutines
+ System_Variables
+ SeismicUnix
+
+=cut
+
+ use Moose;
+ use readfiles; 
+ use Tk;
+ use iSurf4;
+ use SeismicUnix qw ($true $false );
+
+ my $iSurf_Tk  =  {
+     _prompt     => ''
+    };
+
+=head2  Declare
+
+ Variable types
+
+=cut
+
+ 
+=head2 Instantiate classes:
+
+ Create a new version of the package 
+ with a unique name
+
+=cut
+ 
+  my $iSurf        = new iSurf4();
+  my $read         = new readfiles();
+
+=head2 Get configuration information
+
+ print("offset type -1 $offset_type\n\n");
+  print(" inc is  $CFG->{suwind}{1}{inc}\n\n");
+
+=cut
+
+  my ($err,$CFG) 	= $read -> cfg("/usr/local/pl/iSurf4_config.pl");
+
+  my $binheader_type 	= $CFG->{sumute}{1}{binheader_type};
+  my $offset_type 	= $CFG->{sumute}{1}{offset_type};
+  my $gather_type  	= $CFG->{suwind}{1}{key};
+  my $first_gather 	= $CFG->{suwind}{1}{min};
+  my $last_gather    	= $CFG->{suwind}{1}{max};
+  my $gather_inc    	= $CFG->{suwind}{1}{inc};
+
+
+=head2 Check configuration file for errors
+
+=cut
+
+if ( $err) {
+     print(STDERR $err, "\n");
+         exit(1);
+         }
+
+=head2 Declare variables 
+
+    in local memory space
+    print("first_gather is $gather \n\n");
+
+=cut
+
+ my ($calc_rb,$exit_rb,$pick_rb,$next_rb,$again_rb,$saveNcont_rb);
+ my ($mute_taup_top_rb,$mute_taup_bottom_rb,$mute_fp_rb);
+ my ($last_selection);
+ my $rb_value 		= "red";
+ my $gather    		= $CFG->{suwind}{1}{min};
+ my $next_step          = 'stop';
+ my $number_of_tries    = 0;
+ my $there_is_old_data;
+ our $mw;
+
+  $iSurf		->number_of_tries($number_of_tries);
+  #$iSurf		->file_in($file_name);
+  $iSurf		->gather_type($CFG->{suwind}{1}{key});
+  $iSurf		->offset_type($CFG->{sumute}{1}{offset_type});
+  $iSurf		->gather_num($gather);
+  $iSurf		->gather_type($CFG->{suwind}{1}{key});
+  #$iSurf		->set_message('iSurf');
+  $last_selection       = '';
+
+
+=head2
+
+  Check for old data
+  check to see if prior mute parameter files 
+  exist for this  project 
+
+=cut
+
+ #$there_is_old_data = $iSurf->type('TopMute');
+
+ #if($there_is_old_data) {
+ #  print("Old picks already exist.\n");
+ #  print("Delete \(\"rm \*old\*\"\)or Save        old picks, and then restart\n\n");
+ #       exit;
+#}
+
+=head2 Create Main Window 
+
+ Sstart event-driven loop
+ Interaction with user
+ initialize values e.g., number_of_tries=0 (false)
+ If picks are new, show
+ message on how to pick data
+
+=cut
+$there_is_old_data = $false; 
+if (!$there_is_old_data) {
+
+    print("NEW PICKS\n");
+    #$iSurf     ->message('first_top_mute');  
+    $iSurf	->number_of_tries($false); 
+    #$iSurf	->gather_num($gather);
+
+=head2 Display
+
+     data first time
+
+=cut	
+
+     $iSurf       ->display_common_plots();
+
+=head2 Decide whether to 
+
+     PICK or move on to NEXT CDP
+     Place window near the upper top corner
+     of the screen
+  Changing geometry of the toplevel window
+  my $h = $mw->screenheight();
+  my $w = $mw->screenwidth();
+  print("width and height of screen are $w,$h\n\n");
+  print("geometry of screen is $geom\n\n");
+
+=cut
+
+  $mw    =  MainWindow -> new;
+  $mw    -> geometry("800x50+40+0"); 
+  $mw    -> title("Interactive Surface Wave Analysis"); 
+  $mw    -> configure(
+  		-background => 'purple');
+
+  $calc_rb = $mw->Radiobutton(
+               -text         =>'CALC',
+               -background   =>'yellow',
+               -value        =>'calc',
+               -variable     => \$rb_value,
+               -command      => [\&set_calc] )
+				->pack(-side => 'left', 
+				-anchor => 'w');
+
+  $again_rb = $mw->Radiobutton(
+               -text       =>'AGAIN',
+               -background =>'yellow',
+               -value      =>'again',
+               -variable   => \$rb_value,
+               -command    => [\&set_again] )
+				->pack(-side => 'left',
+				-anchor => 'w');  
+
+  $next_rb = $mw->Radiobutton(
+               -text       =>'NEXT',
+               -background =>'yellow',
+               -value      =>'next',
+               -variable   => \$rb_value,
+               -command    => [\&set_next] )
+				->pack(-side => 'left',
+				-anchor => 'w');  
+
+  $mute_taup_bottom_rb = $mw->Radiobutton(
+               -text       =>'BOTTOM-MUTE TAU-P',
+               -background =>'yellow',
+               -value      =>'pick_taup_bottom_mute',
+               -variable   => \$rb_value,
+               -command    => [\&pick_taup_bottom_mute] )
+				->pack(-side => 'left',
+				-anchor => 'w'); 
+
+  $mute_taup_top_rb = $mw->Radiobutton(
+               -text       =>'TOP-MUTE TAU-P',
+               -background =>'yellow',
+               -value      =>'pick_taup_top_mute',
+               -variable   => \$rb_value,
+               -command    => [\&pick_taup_top_mute] )
+				->pack(-side => 'left',
+				-anchor => 'w'); 
+
+  $mute_fp_rb = $mw->Radiobutton(
+               -text       =>'MUTE F-P',
+               -background =>'yellow',
+               -value      =>'pick_fp_mute',
+               -variable   => \$rb_value,
+               -command    => [\&set_pick] )
+				->pack(-side => 'left',
+				-anchor => 'w'); 
+
+  $saveNcont_rb= $mw->Radiobutton(
+               -text       =>'Save and Continue',
+               -background =>'yellow',
+               -value      =>'saveNcont',
+               -variable   => \$rb_value,
+               -command    => [\&set_saveNcont] )
+				->pack(-side => 'left',
+				-anchor => 'w');  
+
+   $exit_rb = $mw->Radiobutton(
+               -text       =>'EXIT',
+               -background =>'yellow',
+               -value      =>'exit',
+               -variable   => \$rb_value,
+               -command    => [\&set_exit] )
+				->pack(-side => 'left',
+				-anchor => 'w');  
+ 
+ MainLoop; # for Tk widgets
+} # for new data
+
+
+=head2 Set the prompt
+
+ value according
+ to which button is pressed
+ then exit the MainLoop
+ destroy the main window after the prompt
+ is properly set
+
+=cut  
+
+=head2 sub pick tau-p bottom mute 
+
+ callbacks
+
+  send gather number to $iSurf
+  delete output of previous semblance
+  plus more callbacks following...
+
+
+=cut
+
+sub pick_taup_bottom_mute {
+  
+  my $pick = 'pick';
+  $mute_taup_bottom_rb->configure(-state => 'normal');
+  $iSurf_Tk->{_prompt} = $pick;
+
+  print("Picking tau-p points\n");
+
+  $iSurf	 ->gather_num($gather);
+ 
+=head2 Delete prior output 
+
+  of previous muting
+
+=cut
+
+  #xk::kill_this('suximage');
+  #xk::kill_this('suxwigb');
+
+=head2 
+
+    -replot 1st data 
+    -PICK tau-p pairs
+    -Increment number of tries to make
+       data display interact with user
+       (number_of_tries = 1)
+
+=cut
+
+  #$iSurf	->message('pre_pick_mute');  
+  $iSurf	->purpose('bottom_mute');
+  $last_selection  = 'bottom_mute';
+  $number_of_tries++;
+  $iSurf	->number_of_tries($number_of_tries); 
+  $iSurf        ->iSelect_tr_Sumute();
+}
+
+=head2 sub set_calc
+
+      -PRESS the CALC button
+      -Increment number of tries to make
+          display and show old picks
+         (if number_of_tries >1)
+
+=cut
+
+=head2 sub pick tau-p top mute 
+
+ callbacks
+
+  send gather number to $iSurf
+  delete output of previous semblance
+  plus more callbacks following...
+
+
+=cut
+
+sub pick_taup_top_mute {
+  my $pick = 'pick';
+  $mute_taup_top_rb->configure(-state => 'normal');
+  $iSurf_Tk->{_prompt} = $pick;
+
+  print("Picking tau-p points\n");
+
+  $iSurf	 ->gather_num($gather);
+ 
+=head2 Delete prior output 
+
+  of previous muting
+
+=cut
+
+  #xk::kill_this('suximage');
+  #xk::kill_this('suxwigb');
+
+=head2 
+
+    -replot 1st data 
+    -PICK tau-p pairs
+    -Increment number of tries to make
+       data display interact with user
+       (number_of_tries = 1)
+
+=cut
+
+  #$iSurf	->message('pre_pick_mute');  
+  $iSurf	->purpose('top_mute');
+  $last_selection  = 'top_mute';
+  $number_of_tries++;
+  $iSurf	->number_of_tries($number_of_tries); 
+  $iSurf        ->iSelect_tr_Sumute();
+}
+
+=head2 sub set_calc
+
+      -PRESS the CALC button
+      -Increment number of tries to make
+          display and show old picks
+         (if number_of_tries >1)
+
+=cut
+sub set_calc {
+  my $calc = 'calc';
+  $calc_rb->configure(-state => 'normal');
+  $iSurf_Tk->{_prompt} = $calc;
+  print("Calculating...\n");
+
+=head2 Delete 
+
+   the previous display
+
+=cut
+
+   #xk::kill_this('suximage');
+   #xk::kill_this('suxwigb');
+
+       $iSurf	->iMutePicks2par();
+       $iSurf	->iSave_mute_picks();
+       $iSurf	->iApply_mute();
+       $iSurf	->isutaup();
+       $number_of_tries++;
+       $iSurf	->number_of_tries($number_of_tries); 
+
+=head2 Message 
+
+       to halts flow
+       when number_of_tries >0
+
+=cut
+	#$iSurf	-> message('post_pick_mute');  
+}
+
+
+=head2 sub set_saveNcont
+
+   same as next
+
+=cut
+
+sub set_saveNcont {
+  my $saveNcont = 'saveNcont';
+  $saveNcont_rb->configure(-state => 'normal');
+  $iSurf_Tk->{_prompt} = $saveNcont;
+  print("Saving and Continuing...\n");
+
+  #$iSurf->icp_sorted2oldpicks();
+  &set_next();
+
+}
+
+=head2 sub set_again
+
+   repeat
+
+=cut
+
+sub set_again{
+  my $again = 'again';
+  use feature qw(switch say); 
+  $again_rb->configure(-state => 'normal');
+  $iSurf_Tk->{_prompt} = $again;
+  $iSurf->display_common_plots();
+#  print("Repeating...\n");
+#  given($last_selection) {
+#    when('botttom_mute'){
+#        &pick_taup_bottom_mute();}
+#    when('top_mute') {
+#        &pick_taup_top_mute();}
+#    when ('')      { 
+#       print("empty\n\n"); 
+#    }
+# } 
+
+}
+
+=head2 sub set_next
+
+  In this case the $variable is empty
+  1. increment gather
+     Exit if beyond last gather 
+  2. reset prompt
+  3. Otherwise display the first X-T plot 
+  4 ... see following callbacks
+
+=cut
+
+sub set_next {
+  print("Next...\n");
+  $next_rb->configure(-state => 'normal');
+  my $next = '';
+  $iSurf_Tk->{_prompt} = $next;
+  $gather = $gather + $gather_inc;
+
+  print("new gather is $gather \n\n");
+
+=head2  Delete output 
+
+   of previous top mute
+
+=cut
+
+    #xk::kill_this('suximage');
+    #xk::kill_this('suxwigb');
+    #xk::kill_this('xgraph');
+
+  if($gather > $last_gather) {
+   set_exit();
+  } 
+
+=head2 Display
+
+       update gather number in memory
+       first top mute
+       Show user message
+       Select the mute values
+=cut
+
+    $iSurf	->gather_num($gather);
+    #$iSurf       ->message('first_top_mute');  
+    $iSurf      ->display_common_plots();
+
+}
+
+=head2  sub set_exit
+
+  saying goodbye 
+  clear old images
+  kill window
+  stop script
+
+=cut
+
+sub set_exit {
+  my $exit = 'exit';
+  $exit_rb->configure(-state => 'normal');
+  $iSurf_Tk->{_prompt} = $exit;
+  print("Good bye.\n");
+  print("Not continuing to next gather\n");
+  #xk::kill_this('suximage');
+  #xk::kill_this('suxwigb');
+  #xk::kill_this('xgraph');
+  $mw->destroy() if Tk::Exists($mw);
+  exit 1;
+}

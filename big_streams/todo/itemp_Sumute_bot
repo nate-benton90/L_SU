@@ -1,0 +1,149 @@
+#! /usr/bin/perl
+# SCRIPT NAME
+#itemp_Sumute_bot.pl
+# Purpose: Linear Mute of Data 
+# Juan M. Lorenzo
+# April 2 2009 
+# Modified to work with erine lsu1 Nov 21, 2009
+#
+# Aug. 15, 2011- end of WWII in 1945 
+# V 1.2
+# bottom mute via one polygon file
+# Modified to work with file checking options (files that =1 or =0) 
+# on the first lines of special files.
+# Use shell transparently to locate home directory before compilation
+# V1.3
+# for bottom muting
+
+        my $library_location;
+
+        BEGIN {
+                use Shell qw(echo);
+
+                $home_directory = ` echo \$HOME`;
+                chomp $home_directory;
+       $library_location = $home_directory.'/lsu/libAll';
+        }
+
+# LOAD GENERAL PERL LIBRARY
+  use lib $library_location;
+
+# LOAD SEISMIC UNIX GLOBAL SYSTEM LIBARAY
+  use lib '/usr/local/pl/libAll';
+  use SeismicUnix qw ($on $off $itemp_bot_mute_picks_sorted_par $itemp_bot_mute_num_points $suffix_mute $suffix_su);
+
+# library path
+  use lib './libAll';
+
+# use library
+  use System_Variables2;
+
+# import system variables
+  my ($DATA_SEISMIC_SU) = System_Variables2::DATA_SEISMIC_SU();
+
+# use library
+  use iBot_Mute qw ($file_name $taup_data $panel_first $panel_last $panel_inc $traces_per_panel);
+
+# sufile names
+  $sufile_in[1] 		= $file_name;
+  $sufile_out[1] 		= $sufile_in[1].$suffix_mute;
+  $sumute_inbound[1]  		= $DATA_SEISMIC_SU.'/'.$sufile_in[1].$suffix_su;
+
+# GAIN DATA
+$N=1;
+$sugain_pbal[$N] =1;
+$sugain_note[$N] ='\ pbal='.$sugain_pbal[$N];
+
+	$sugain[1]  =  (" sugain 	            		\\
+		pbal=1				  		\\
+               ");
+
+# GAIN DATA
+$N=2;
+$sugain_wagc[$N] = 0.1;
+$sugain_note[$N] ='\ wagc='.$sugain_wagc[$N];
+	$sugain[2]  =  (" sugain 	            		\\
+		wagc=0.1				  	\\
+		agc=1				  		\\
+               ");
+
+# FILTER  DATA
+$sufilter_bandpass[1]= '0,3,300,600';
+$sufilter_note[1] = '\ f='.$sufilter_bandpass[1];
+	$sufilter[1] =  (" sufilter 	            		\\
+		f=0,3,300,600					\\
+               ");
+# SUMUTE parameters
+  my(   $ref_sumute_key,$ref_sumute_pick_file_outbound,
+	$ref_sumute_par_file_inbound,$ref_sumute_type,
+	$ref_sumute_note,$ref_sumute_taper_pts,$sumute_Nmax
+	)   = iBot_Mute::sumute();
+
+	$sumute[1]  =  (" sumute 	            		\\
+		par=$$ref_sumute_par_file_inbound[1]		\\
+		key=$$ref_sumute_key[1]				\\
+		ntaper=$$ref_sumute_taper_pts[1]		\\
+		mode=$$ref_sumute_type[1]			\\
+              ");
+
+# DISPLAY DATA
+# display data
+	for ($panel=$panel_first; $panel<=$panel_last; $panel = $panel + $panel_inc){	
+$N=1;
+$P=$panel;
+
+		$suximage_binhdr[$N] 		= 'tracf';
+		$suximage_windowtitle[$N]	= '\('.$N.'\)\ '.'PICK\ BOTTOM\ MUTE\ \ '.$file_name.'\ panel\(s\)\ '.$panel.'\ of\ '.$panel_last;
+	        $suximage_title[$N]    		= 'S14\ Hz\ wagc=\ '.$sugain_note[2].$sufilter_note[1];
+		$suximage_xlabel[$N]    	= $suximage_binhdr[$N];
+		$suximage_tlabel[$N]  		= 'TWTT \(s\)';
+		$suximage_box_width[$N] 	= 300;				
+		$suximage_box_height[$N] 	= 700;			
+		$suximage_X0[$N]        	= 300 + ($P-1) * 25;
+		$suximage_Y0[$N]        	= 0 + ($P-1) * 25;
+		$suximage_orientation[$N]	= 'normal';
+		$suximage_orientation[$N]	= 'seismic';
+		$suximage_hiclip[$N]            = 1; 
+		$suximage_legend_on[$N]		= $on;
+		$suximage_legend_off[$N]	= $off;
+		$suximage_dx[$N]		= 1;
+		$suximage_x0[$N]		= 1;
+
+	$suximage[$P][$N] =  (" suximage			\\
+		key=$suximage_binhdr[$N]			\\
+		title=$suximage_title[$N]			\\
+		label1=$suximage_tlabel[$N]			\\
+		label2=$suximage_xlabel[$N]			\\
+		legend=$suximage_legend_on[$N]			\\
+		d2=$suximage_dx[$N]				\\
+		f2=$suximage_x0[$N]				\\
+		style=$suximage_orientation[$N]			\\
+		xbox=$suximage_X0[$N]				\\
+		ybox=$suximage_Y0[$N]				\\
+		wbox=$suximage_box_width[$N] 			\\
+		hbox=$suximage_box_height[$N]			\\
+		bclip=$suximage_hiclip[$N]                      \\
+		perc=99						\\
+		cmap=hsv1					\\
+		va=1						\\
+		xcur=3						\\
+		");
+$N=0;
+}
+
+# DISPLAY DATA
+
+#  DEFINE FLOW(S)
+	$flow[1] = (" 						\\
+		$sumute[1] 	 				\\
+		< $sumute_inbound[1] |				\\
+		$sugain[2] | 					\\
+		$sufilter[1] |					\\
+		$suximage[1][1]					\\
+		&						\\
+		"); 
+
+# RUN FLOW(S)
+       system $flow[1]; 
+       system 'echo', $flow[1];	
+
