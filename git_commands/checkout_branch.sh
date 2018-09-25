@@ -1,5 +1,4 @@
 #!/bin/bash
 
-# checkuoyt a new branch 050418 based on master
-#git checkout -b 050418 master
-git checkout 050418
+# checkuoyt a new branch V0.3.5 based on master
+git checkout -b V0.3.5 
